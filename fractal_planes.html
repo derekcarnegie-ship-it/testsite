@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fractal Planes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #808080; overflow: hidden; font-family: system-ui, sans-serif; color: #222; }
+  canvas { display: block; }
+
+  #hint {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    letter-spacing: .08em;
+    opacity: .4;
+    pointer-events: none;
+  }
+
+  #ui {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 28px;
+    background: rgba(255,255,255,.35);
+    border: 1px solid rgba(255,255,255,.55);
+    border-radius: 40px;
+    backdrop-filter: blur(14px);
+  }
+
+  #ui label { font-size: 12px; letter-spacing: .1em; opacity: .7; }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 220px;
+    height: 3px;
+    background: rgba(0,0,0,.2);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    background: #333;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  #info { font-size: 12px; min-width: 120px; opacity: .55; letter-spacing: .04em; }
+</style>
+</head>
+<body>
+
+<p id="hint">DRAG TO ROTATE · SCROLL TO ZOOM</p>
+<div id="ui">
+  <label>DEPTH</label>
+  <input type="range" id="slider" min="0" max="4" value="2" step="1">
+  <span id="info"></span>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ── Renderer ──────────────────────────────────────────────────────────────
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// ── Scene ─────────────────────────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x808080);
+
+// ── Lights ────────────────────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const sun = new THREE.DirectionalLight(0xffffff, 1.1);
+sun.position.set(4, 7, 5);
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xc8d0d8, 0.35);
+fill.position.set(-3, -2, -4);
+scene.add(fill);
+
+// ── Camera ────────────────────────────────────────────────────────────────
+const asp = innerWidth / innerHeight;
+const F = 1.6;
+const camera = new THREE.OrthographicCamera(-F*asp, F*asp, F, -F, 0.01, 200);
+camera.position.set(6, 6, 6);
+camera.lookAt(0, 0, 0);
+
+// ── Controls ──────────────────────────────────────────────────────────────
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+
+// ── Constants ─────────────────────────────────────────────────────────────
+const T = 0.02;           // panel thickness as fraction of panel size
+const GAP = 0.82;         // panels rendered at this fraction of their cube — creates gaps
+
+// Box geometries, one per axis. Orientation is baked in so no rotation needed.
+// Group indices: +x=0,-x=1,+y=2,-y=3,+z=4,-z=5
+const GEOS = [
+  new THREE.BoxGeometry(1, 1, T),  // XY plane: thin in Z
+  new THREE.BoxGeometry(1, T, 1),  // XZ plane: thin in Y
+  new THREE.BoxGeometry(T, 1, 1),  // YZ plane: thin in X
+];
+
+// Off-white panel face material (all 6 box faces same — sides are too thin to matter)
+const panelMat = new THREE.MeshPhongMaterial({
+  color: 0xf0ebe3,
+  shininess: 20,
+  specular: 0x777777,
+});
+
+// Charcoal outline material
+const outlineMat = new THREE.LineBasicMaterial({ color: 0x282828 });
+
+// Rectangle corners (unit size, centred at origin) for each axis orientation.
+// Used to draw the 4 perimeter edges of each panel face.
+const RECT = [
+  [[-0.5,-0.5, 0],[ 0.5,-0.5, 0],[ 0.5, 0.5, 0],[-0.5, 0.5, 0]],  // XY
+  [[-0.5, 0,-0.5],[ 0.5, 0,-0.5],[ 0.5, 0, 0.5],[-0.5, 0, 0.5]],  // XZ
+  [[ 0,-0.5,-0.5],[ 0, 0.5,-0.5],[ 0, 0.5, 0.5],[ 0,-0.5, 0.5]],  // YZ
+];
+
+// ── Recursive collector ───────────────────────────────────────────────────
+function collect(out, cx, cy, cz, size, depth, maxDepth) {
+  if (depth > maxDepth) return;
+  out.push({ cx, cy, cz, size });
+  const s = size / 4;
+  for (const dx of [-1, 1])
+    for (const dy of [-1, 1])
+      for (const dz of [-1, 1])
+        collect(out, cx + dx*s, cy + dy*s, cz + dz*s, size / 2, depth + 1, maxDepth);
+}
+
+// ── Build / rebuild ───────────────────────────────────────────────────────
+const group = new THREE.Group();
+scene.add(group);
+const dummy = new THREE.Object3D();
+
+function build(maxDepth) {
+  // Dispose old line geometries
+  group.traverse(o => { if (o.isLineSegments) o.geometry.dispose(); });
+  group.clear();
+
+  const nodes = [];
+  collect(nodes, 0, 0, 0, 1, 0, maxDepth);
+  const n = nodes.length;
+
+  for (let axis = 0; axis < 3; axis++) {
+    const corners = RECT[axis];
+
+    // ── Panel faces (InstancedMesh) ────────────────────────────────────────
+    const mesh = new THREE.InstancedMesh(GEOS[axis], panelMat, n);
+    for (let i = 0; i < n; i++) {
+      const { cx, cy, cz, size } = nodes[i];
+      dummy.position.set(cx, cy, cz);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.setScalar(size * GAP);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    group.add(mesh);
+
+    // ── Perimeter edge outlines (merged LineSegments) ──────────────────────
+    const pos = [];
+    for (const { cx, cy, cz, size } of nodes) {
+      const vs = size * GAP;   // visual size
+      for (let j = 0; j < 4; j++) {
+        const a = corners[j], b = corners[(j + 1) % 4];
+        pos.push(
+          cx + a[0]*vs, cy + a[1]*vs, cz + a[2]*vs,
+          cx + b[0]*vs, cy + b[1]*vs, cz + b[2]*vs,
+        );
+      }
+    }
+    const lineGeo = new THREE.BufferGeometry();
+    lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    group.add(new THREE.LineSegments(lineGeo, outlineMat));
+  }
+
+  document.getElementById('info').textContent =
+    `level ${maxDepth}  ·  ${(n * 3).toLocaleString()} panels`;
+}
+
+// ── UI ────────────────────────────────────────────────────────────────────
+const slider = document.getElementById('slider');
+slider.addEventListener('input', () => build(+slider.value));
+build(2);
+
+// ── Render loop ───────────────────────────────────────────────────────────
+(function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+})();
+
+// ── Resize ────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  const a = innerWidth / innerHeight;
+  camera.left = -F * a; camera.right = F * a;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

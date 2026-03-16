@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ball Animation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #1a1a1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    canvas {
+      border-radius: 16px;
+      background: #1c1c1c;
+      box-shadow: 0 30px 90px rgba(0,0,0,0.7);
+    }
+  </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+c.width  = 520;
+c.height = 520;
+
+const W = c.width, H = c.height;
+const R           = 20;
+const BX          = W / 2;
+const FLOOR       = H;
+const START_Y     = H / 2;
+const GRAVITY     = 0.6;
+const RESTITUTION = 0.5;
+const SETTLE_VEL  = 3.0;
+const COLOR       = '#f0ece0';
+const THIN_W      = 4;
+
+let state = null, stateStart = 0;
+let by = START_Y, vy = 0;
+let lastBounceTs  = -Infinity;
+let CY = 0, L = 0;
+let stamps = [];
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+function reset(ts) {
+  // Start directly in 'pause' — no pop-in animation
+  state = 'pause'; stateStart = ts;
+  by = START_Y; vy = 0;
+  lastBounceTs = -Infinity;
+  stamps = [];
+}
+function go(s, ts) { state = s; stateStart = ts; }
+
+const easeOutQuart = t => 1 - (1 - t) ** 4;
+const easeInOut    = t => t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+
+function deform(ts) {
+  const age = ts - lastBounceTs;
+  if (age < 160) {
+    const f = 1 - age / 160;
+    return { sx: 1 + 0.18 * f, sy: 1 - 0.18 * f };
+  }
+  const s = Math.min(Math.abs(vy) * 0.006, 0.07);
+  return { sx: 1 - s * 0.5, sy: 1 + s };
+}
+
+function drawBall(sx = 1, sy = 1, y = by) {
+  ctx.save();
+  ctx.translate(BX, y);
+  ctx.scale(sx, sy);
+  ctx.shadowColor = 'rgba(240,236,224,0.3)';
+  ctx.shadowBlur  = 18;
+  const g = ctx.createRadialGradient(-R * 0.3, -R * 0.4, 1, 0, 0, R);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(1, COLOR);
+  ctx.beginPath();
+  ctx.arc(0, 0, R, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawSpoke(angle, len, lw = THIN_W) {
+  const halfW = lw / 2;
+  if (len <= halfW) return;
+
+  // θ: half-angle subtended by the spoke width at radius `len`.
+  // Caps are arcs of the circle at radius `len` centred on the rotation
+  // origin — when len === R they are exactly the ball's circumference.
+  const θ     = Math.asin(halfW / len);
+  const yEdge = len * Math.cos(θ);  // √(len²−halfW²)
+
+  ctx.save();
+  ctx.translate(BX, CY);
+  ctx.rotate(angle);
+  ctx.fillStyle = COLOR;
+  ctx.beginPath();
+  // "Up" cap (−y end): anticlockwise arc through (0, −len)
+  ctx.arc(0, 0, len, -Math.PI / 2 + θ, -Math.PI / 2 - θ, true);
+  // Left side down
+  ctx.lineTo(-halfW, yEdge);
+  // "Down" cap (+y end): anticlockwise arc through (0, +len)
+  ctx.arc(0, 0, len,  Math.PI / 2 + θ,  Math.PI / 2 - θ, true);
+  // Right side back up to start
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// Draw the full-height line at a given width
+function drawWideBar(w) {
+  ctx.fillStyle = COLOR;
+  ctx.fillRect(BX - w / 2, 0, w, by + R);
+}
+
+// ── animation loop ────────────────────────────────────────────────────────────
+
+function animate(ts) {
+  if (!state) reset(ts);
+  const dt = ts - stateStart;
+
+  ctx.clearRect(0, 0, W, H);
+
+  switch (state) {
+
+    // Ball appears instantly — no pop
+    case 'pause': {
+      drawBall();
+      if (dt > 750) go('fall', ts);
+      break;
+    }
+
+    case 'fall':
+    case 'bounce': {
+      vy += GRAVITY;
+      by += vy;
+      if (by + R >= FLOOR) {
+        by = FLOOR - R;
+        if (Math.abs(vy) < SETTLE_VEL) {
+          vy = 0; lastBounceTs = ts;
+          go('rest', ts);
+        } else {
+          vy = -vy * RESTITUTION;
+          lastBounceTs = ts;
+          go('bounce', ts);
+        }
+      }
+      const { sx, sy } = deform(ts);
+      drawBall(sx, sy, sy < 1 ? by + R * (1 - sy) : by);
+      break;
+    }
+
+    case 'rest': {
+      const age = ts - lastBounceTs;
+      if (age < 160) {
+        const f  = 1 - age / 160;
+        const sy = 1 - 0.18 * f, sx = 1 + 0.18 * f;
+        drawBall(sx, sy, by + R * (1 - sy));
+      } else {
+        drawBall();
+      }
+      if (dt > 550) {
+        CY = (by + R) / 2;             // = H/2 = START_Y — perfect loop closure
+        L  = Math.sqrt(W * W + H * H) / 2;  // half-diagonal ≈ 367.7 — spokes exceed frame
+        go('grow', ts);
+      }
+      break;
+    }
+
+    // Full-width line grows upward, covering the ball
+    case 'grow': {
+      const t     = Math.min(dt / 420, 1);
+      const lineH = easeOutQuart(t) * (by + R);
+      drawBall();
+      ctx.fillStyle = COLOR;
+      ctx.fillRect(BX - R, (by + R) - lineH, R * 2, lineH);
+      if (t >= 1) go('pause_wide', ts);
+      break;
+    }
+
+    // 0.25 s hold on the wide bar
+    case 'pause_wide': {
+      drawWideBar(R * 2);
+      if (dt > 250) go('thin', ts);
+      break;
+    }
+
+    // Bar shrinks in width from 2R → THIN_W
+    case 'thin': {
+      const t = Math.min(dt / 300, 1);
+      drawWideBar(R * 2 + (THIN_W - R * 2) * easeInOut(t));
+      if (t >= 1) go('pause_thin', ts);
+      break;
+    }
+
+    // 0.25 s hold on the thin line
+    case 'pause_thin': {
+      drawWideBar(THIN_W);
+      if (dt > 250) { stamps = []; go('rotate', ts); }
+      break;
+    }
+
+    // Half rotation (0 → 180°), 75% faster than original → ~450 ms
+    case 'rotate': {
+      const t     = Math.min(dt / 450, 1);
+      const angle = t * Math.PI;
+
+      while (stamps.length < 18 && angle >= stamps.length * (10 * Math.PI / 180)) {
+        stamps.push(stamps.length * (10 * Math.PI / 180));
+      }
+      for (const a of stamps) drawSpoke(a, L);
+      if (t < 1) drawSpoke(angle, L);
+      if (t >= 1) go('pause_circle', ts);
+      break;
+    }
+
+    case 'pause_circle': {
+      for (let i = 0; i < 18; i++) drawSpoke(i * (10 * Math.PI / 180), L);
+      if (dt > 700) go('retract', ts);
+      break;
+    }
+
+    case 'retract': {
+      const t   = Math.min(dt / 700, 1);
+      const len = L + (R - L) * easeOutQuart(t);
+      for (let i = 0; i < 18; i++) drawSpoke(i * (10 * Math.PI / 180), len);
+      if (t >= 1) go('reform', ts);
+      break;
+    }
+
+    // Retract ends with spokes at length R — snap directly to the full ball,
+    // no intermediate grow. Spoke extent = ball radius, so the cut is seamless.
+    case 'reform': {
+      drawBall(1, 1, CY);
+      if (dt > 1800) reset(ts);
+      break;
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
