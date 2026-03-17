@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skyline Contours v2</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a1a;
+      font-family: system-ui, sans-serif;
+      color: #ccc;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Upload screen ──────────────────────────────────────── */
+
+    #upload-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    #drop-zone {
+      border: 2px dashed rgba(255,255,255,0.2);
+      border-radius: 16px;
+      padding: 64px 88px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      user-select: none;
+    }
+    #drop-zone:hover, #drop-zone.drag-over {
+      border-color: rgba(255,255,255,0.55);
+      background: rgba(255,255,255,0.04);
+    }
+    #drop-zone p {
+      font-size: 17px;
+      opacity: 0.6;
+      margin-bottom: 20px;
+      letter-spacing: 0.05em;
+    }
+    #drop-zone label {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      padding: 10px 28px;
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      display: inline-block;
+    }
+    #drop-zone label:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.5);
+    }
+    #file-input { display: none; }
+
+    /* ── Canvas screen ──────────────────────────────────────── */
+
+    #canvas-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    #canvas-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 12px 12px 0;
+    }
+
+    #output {
+      display: block;
+      box-shadow: 0 6px 40px rgba(0,0,0,0.7);
+    }
+
+    /* ── Bottom bar ─────────────────────────────────────────── */
+
+    #bottom-bar {
+      flex-shrink: 0;
+      height: 56px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #bottom-bar span {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      opacity: 0.25;
+    }
+
+    /* ── Processing overlay ─────────────────────────────────── */
+    #processing {
+      position: fixed;
+      inset: 0;
+      background: rgba(26,26,26,0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+
+<!-- STATE A: Upload -->
+<div id="upload-screen">
+  <div id="drop-zone">
+    <p>Drop a skyline photo here</p>
+    <label for="file-input">CHOOSE FILE</label>
+    <input type="file" id="file-input" accept="image/*">
+  </div>
+</div>
+
+<!-- STATE B: Canvas -->
+<div id="canvas-screen">
+  <div id="canvas-wrapper">
+    <canvas id="output"></canvas>
+  </div>
+  <div id="bottom-bar">
+    <span>SKYLINE CONTOURS</span>
+  </div>
+</div>
+
+<div id="processing">RENDERING…</div>
+
+<script>
+// ── Physical / canvas constants ────────────────────────────────────────────
+
+const PX_PER_MM    = 5;
+const CANVAS_W     = 210 * PX_PER_MM;           // 1050px — A4 width
+const CANVAS_H     = 297 * PX_PER_MM;           // 1485px — A4 height
+const MARGIN_PX    = 10 * PX_PER_MM;            // 50px
+const FIRST_LINE_Y = CANVAS_H - 50 * PX_PER_MM; // 1235px — 5cm from bottom
+const GAP_PX       = 0.8 * PX_PER_MM;           // 4px
+const BASE_THICK   = 0.75;
+const DRAW_W       = CANVAS_W - 2 * MARGIN_PX;  // 950
+
+// ── Canvas / DPR setup ────────────────────────────────────────────────────
+
+const canvas = document.getElementById('output');
+const ctx    = canvas.getContext('2d');
+const DPR    = window.devicePixelRatio || 1;
+
+canvas.width  = CANVAS_W * DPR;
+canvas.height = CANVAS_H * DPR;
+ctx.scale(DPR, DPR);
+
+function sizeCanvasCSS() {
+  const barH = 56, pad = 24;
+  const maxH = window.innerHeight - barH - pad;
+  const maxW = window.innerWidth  - pad;
+  const ratio = CANVAS_W / CANVAS_H;
+  const h = Math.min(maxH, maxW / ratio);
+  canvas.style.height = h + 'px';
+  canvas.style.width  = (h * ratio) + 'px';
+}
+sizeCanvasCSS();
+window.addEventListener('resize', sizeCanvasCSS);
+
+// ── Application state ─────────────────────────────────────────────────────
+
+let baseY = null;
+
+// ── Sky detection ─────────────────────────────────────────────────────────
+
+function getImagePixels(img) {
+  const w = 800;
+  const h = Math.round(img.naturalHeight * 800 / img.naturalWidth);
+  const oc = document.createElement('canvas');
+  oc.width = w; oc.height = h;
+  oc.getContext('2d').drawImage(img, 0, 0, w, h);
+  return { imageData: oc.getContext('2d').getImageData(0, 0, w, h), w, h };
+}
+
+function getBrightness(data, x, y, w) {
+  const i = (y * w + x) * 4;
+  return 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+}
+
+function detectSkyline(imageData, w, h) {
+  const d        = imageData.data;
+  const raw      = new Array(w);
+  const WINDOW   = 18;
+  const VAR_THRESH = 280;
+
+  for (let x = 0; x < w; x++) {
+    raw[x] = null;
+    const skyRows = Math.max(10, Math.floor(h * 0.15));
+    let skySum = 0;
+    for (let y = 0; y < skyRows; y++) skySum += getBrightness(d, x, y, w);
+    const skyAvg = skySum / skyRows;
+
+    for (let y = 0; y < h - WINDOW; y++) {
+      let sum = 0;
+      const vals = new Float32Array(WINDOW);
+      for (let dy = 0; dy < WINDOW; dy++) {
+        vals[dy] = getBrightness(d, x, y + dy, w);
+        sum += vals[dy];
+      }
+      const mean = sum / WINDOW;
+      let variance = 0;
+      for (let dy = 0; dy < WINDOW; dy++) { const d2 = vals[dy] - mean; variance += d2 * d2; }
+      variance /= WINDOW;
+
+      if (variance > VAR_THRESH || (y > h * 0.1 && skyAvg - mean > 55)) {
+        raw[x] = y + WINDOW * 0.4;
+        break;
+      }
+    }
+  }
+
+  let last = null;
+  for (let x = 0; x < w; x++) {
+    if (raw[x] !== null) last = raw[x]; else if (last !== null) raw[x] = last;
+  }
+  last = null;
+  for (let x = w - 1; x >= 0; x--) {
+    if (raw[x] !== null) last = raw[x]; else if (last !== null) raw[x] = last;
+  }
+  for (let x = 0; x < w; x++) if (raw[x] === null) raw[x] = h * 0.6;
+  return raw;
+}
+
+function smoothArray(arr, radius) {
+  const out = new Array(arr.length);
+  for (let i = 0; i < arr.length; i++) {
+    const lo = Math.max(0, i - radius), hi = Math.min(arr.length - 1, i + radius);
+    let sum = 0;
+    for (let j = lo; j <= hi; j++) sum += arr[j];
+    out[i] = sum / (hi - lo + 1);
+  }
+  return out;
+}
+
+function mapSkylineToCanvas(skylineY) {
+  const VERT_RANGE = 150;
+  const len  = skylineY.length;
+  const minY = Math.min(...skylineY);
+  const maxY = Math.max(...skylineY);
+  const range = Math.max(maxY - minY, 1);
+  const result = new Float32Array(DRAW_W);
+  for (let cx = 0; cx < DRAW_W; cx++) {
+    const px = Math.round(cx * (len - 1) / (DRAW_W - 1));
+    result[cx] = FIRST_LINE_Y + ((skylineY[px] - minY) / range - 0.5) * VERT_RANGE;
+  }
+  return result;
+}
+
+// ── Line generation: flat-to-skyline gradient ─────────────────────────────
+//
+// The topmost line (k=0) is a perfectly flat horizontal at the top margin.
+// The bottommost line (k=N-1) exactly follows the detected skyline.
+// Every line in between is a linear interpolation between those two shapes,
+// so the contours gradually morph from flat at the top to the skyline below.
+
+function generateLines(base) {
+  const N = Math.ceil((FIRST_LINE_Y - MARGIN_PX) / GAP_PX) + 1;
+  const lines = [];
+
+  for (let k = 0; k < N; k++) {
+    const t     = k / (N - 1);              // 0 = top/flat, 1 = bottom/skyline
+    const flatY = MARGIN_PX + k * GAP_PX;  // position if fully flat
+    const yVals = new Float32Array(DRAW_W);
+    for (let i = 0; i < DRAW_W; i++) {
+      yVals[i] = (1 - t) * flatY + t * base[i];
+    }
+    lines.push(yVals);
+  }
+  return lines;
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────
+
+function drawLines(lines) {
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  ctx.strokeStyle = '#111111';
+  ctx.lineCap     = 'round';
+  ctx.lineWidth   = BASE_THICK;
+
+  const xOff = MARGIN_PX;
+
+  ctx.beginPath();
+  for (const yVals of lines) {
+    for (let i = 0; i < DRAW_W - 1; i++) {
+      const y0 = yVals[i], y1 = yVals[i + 1];
+      if ((y0 < 0 && y1 < 0) || (y0 > CANVAS_H && y1 > CANVAS_H)) continue;
+      ctx.moveTo(xOff + i, y0);
+      ctx.lineTo(xOff + i + 1, y1);
+    }
+  }
+  ctx.stroke();
+}
+
+// ── Render pipeline ───────────────────────────────────────────────────────
+
+let renderPending = false;
+
+function render() {
+  if (!baseY) return;
+  drawLines(generateLines(baseY));
+}
+
+function scheduleRender() {
+  if (renderPending) return;
+  renderPending = true;
+  requestAnimationFrame(() => { renderPending = false; render(); });
+}
+
+// ── Image loading ─────────────────────────────────────────────────────────
+
+function handleImageLoad(file) {
+  const proc = document.getElementById('processing');
+  proc.style.display = 'flex';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      setTimeout(() => {
+        const { imageData, w, h } = getImagePixels(img);
+        const rawY    = detectSkyline(imageData, w, h);
+        const smoothY = smoothArray(rawY, 3);
+        baseY = mapSkylineToCanvas(smoothY);
+
+        document.getElementById('upload-screen').style.display = 'none';
+        document.getElementById('canvas-screen').style.display = 'flex';
+        proc.style.display = 'none';
+        scheduleRender();
+      }, 30);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Event wiring ──────────────────────────────────────────────────────────
+
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('drag-over');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) handleImageLoad(f);
+});
+
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) handleImageLoad(e.target.files[0]);
+});
+</script>
+
+</body>
+</html>
