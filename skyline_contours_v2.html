@@ -265,28 +265,32 @@ function mapSkylineToCanvas(skylineY) {
   return result;
 }
 
-// ── Line generation: equidistant perpendicular offset ─────────────────────
+// ── Line generation: perpendicular offset + progressive smoothing ──────────
 //
-// Each line is offset GAP_PX in the direction perpendicular to the previous
-// line's local tangent. This keeps spacing visually uniform regardless of
-// slope — no line crowding at steep edges, no lerp-induced ripple pattern.
-// No randomness: pure geometry, deterministic, zero drift.
+// Two-pass approach:
+//   Pass 1 — generate all lines via perpendicular offset (equidistant spacing).
+//   Pass 2 — apply smoothing that grows from radius 0 at the bottom (skyline
+//             preserved as-is) to radius 120 at the top, then reduce amplitude
+//             toward the line's own mean so the top line is perfectly flat.
+//
+// Result: the bottom line exactly traces the skyline; lines above gradually
+// round their corners and flatten until the topmost line is horizontal.
 
 function generateLines(base) {
-  const lines    = [];
   const pts_x    = new Float32Array(DRAW_W);
   const pts_y    = new Float32Array(DRAW_W);
   const sortArr  = new Array(DRAW_W);
-  const SLOPE_CAP = 1.5;  // caps x-shift so all columns advance upward fast enough
+  const SLOPE_CAP = 1.5;
 
+  // ── Pass 1: raw perpendicular-offset lines ────────────────────────────
+  const rawLines = [new Float32Array(base)];  // line 0 = skyline
   let currentY = new Float32Array(base);
 
   for (let safety = 0; safety < 800; safety++) {
     let maxY = 0;
     for (let i = 0; i < DRAW_W; i++) if (currentY[i] > maxY) maxY = currentY[i];
-    if (maxY <= 0) break;
+    if (maxY <= MARGIN_PX) break;  // stop when slowest column hits top margin
 
-    // Step 1: move each point GAP_PX along the upward surface normal
     for (let i = 0; i < DRAW_W; i++) {
       const iL  = Math.max(0, i - 4), iR = Math.min(DRAW_W - 1, i + 4);
       const raw = (currentY[iR] - currentY[iL]) / (iR - iL);
@@ -296,11 +300,9 @@ function generateLines(base) {
       pts_y[i] = currentY[i] - GAP_PX / len;
     }
 
-    // Step 2: sort by shifted x (nearly sorted — O(N) for TimSort)
     for (let i = 0; i < DRAW_W; i++) sortArr[i] = i;
     sortArr.sort((a, b) => pts_x[a] - pts_x[b]);
 
-    // Step 3: resample back to integer x columns via linear interpolation
     const yVals = new Float32Array(DRAW_W);
     let jj = 0;
     for (let xi = 0; xi < DRAW_W; xi++) {
@@ -315,8 +317,38 @@ function generateLines(base) {
       }
     }
 
-    lines.push(yVals);
+    rawLines.push(yVals);
     currentY = yVals;
+  }
+
+  // ── Pass 2: progressive smoothing + amplitude reduction ───────────────
+  // k = 0 → bottom (skyline, no change), k = N-1 → top (flat horizontal).
+  const N = rawLines.length;
+  const lines = [];
+
+  for (let k = 0; k < N; k++) {
+    const raw = rawLines[k];
+    const t   = N > 1 ? k / (N - 1) : 0;   // 0 = bottom, 1 = top
+
+    // Smoothing radius grows from 0 (bottom) to 120px (top).
+    // At t=0: no smoothing — skyline shape fully preserved.
+    // At t=1: radius=120 — all corner detail is averaged away.
+    const radius   = Math.round(t * 120);
+    const smoothed = radius > 1 ? smoothArray(raw, radius) : raw;
+
+    // Mean y of this line — the "flat" position it collapses toward at top.
+    let meanY = 0;
+    for (let i = 0; i < DRAW_W; i++) meanY += smoothed[i];
+    meanY /= DRAW_W;
+
+    // Amplitude factor: 1 at bottom (full skyline relief), 0 at top (flat).
+    const amp   = 1 - t;
+    const final = new Float32Array(DRAW_W);
+    for (let i = 0; i < DRAW_W; i++) {
+      final[i] = meanY + (smoothed[i] - meanY) * amp;
+    }
+
+    lines.push(final);
   }
 
   return lines;

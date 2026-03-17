@@ -452,8 +452,11 @@ function generateAllLines(base, errorFactor, seeds) {
       thicks[xi] = BASE_THICK * blended * segJitter;
     }
 
-    lines.push({ y: yVals, t: thicks });
-    currentY = yVals;
+    // Smooth each line to round sharp building-edge corners.
+    // Small radius (10px ≈ 1.25 gaps) removes kinks without losing skyline detail.
+    const smoothY = new Float32Array(smoothArray(yVals, 10));
+    lines.push({ y: smoothY, t: thicks });
+    currentY = smoothY;
   }
 
   return lines;
