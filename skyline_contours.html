@@ -186,10 +186,10 @@ const CANVAS_W     = 210 * PX_PER_MM;          // 1050 logical px  (A4 width)
 const CANVAS_H     = 297 * PX_PER_MM;          // 1485 logical px  (A4 height)
 const MARGIN_PX    = 10 * PX_PER_MM;           // 50px — border margin
 const FIRST_LINE_Y = CANVAS_H - 50 * PX_PER_MM;// 1235px — 5cm from bottom
-const GAP_PX       = 0.8 * PX_PER_MM;          // 4px — gap between lines
+const GAP_PX       = 1.6 * PX_PER_MM;          // 8px — gap between lines
 // Line thickness for screen rendering. Print spec is 0.01mm = 0.05px (invisible
-// on screen), so we scale up to 0.75px base while keeping the 50–250% variation.
-const BASE_THICK   = 0.75;                      // logical px — screen-friendly base
+// on screen), so we scale up to 1.5px base while keeping the 50–250% variation.
+const BASE_THICK   = 1.5;                       // logical px — screen-friendly base
 const DRAW_W       = CANVAS_W - 2 * MARGIN_PX; // 950 — drawable column count
 
 // ── Canvas / DPR setup ────────────────────────────────────────────────────

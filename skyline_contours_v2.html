@@ -150,8 +150,8 @@ const CANVAS_W     = 210 * PX_PER_MM;           // 1050px — A4 width
 const CANVAS_H     = 297 * PX_PER_MM;           // 1485px — A4 height
 const MARGIN_PX    = 10 * PX_PER_MM;            // 50px
 const FIRST_LINE_Y = CANVAS_H - 50 * PX_PER_MM; // 1235px — 5cm from bottom
-const GAP_PX       = 0.8 * PX_PER_MM;           // 4px
-const BASE_THICK   = 0.75;
+const GAP_PX       = 1.6 * PX_PER_MM;           // 8px
+const BASE_THICK   = 1.5;
 const DRAW_W       = CANVAS_W - 2 * MARGIN_PX;  // 950
 
 // ── Canvas / DPR setup ────────────────────────────────────────────────────
@@ -265,26 +265,60 @@ function mapSkylineToCanvas(skylineY) {
   return result;
 }
 
-// ── Line generation: flat-to-skyline gradient ─────────────────────────────
+// ── Line generation: equidistant perpendicular offset ─────────────────────
 //
-// The topmost line (k=0) is a perfectly flat horizontal at the top margin.
-// The bottommost line (k=N-1) exactly follows the detected skyline.
-// Every line in between is a linear interpolation between those two shapes,
-// so the contours gradually morph from flat at the top to the skyline below.
+// Each line is offset GAP_PX in the direction perpendicular to the previous
+// line's local tangent. This keeps spacing visually uniform regardless of
+// slope — no line crowding at steep edges, no lerp-induced ripple pattern.
+// No randomness: pure geometry, deterministic, zero drift.
 
 function generateLines(base) {
-  const N = Math.ceil((FIRST_LINE_Y - MARGIN_PX) / GAP_PX) + 1;
-  const lines = [];
+  const lines    = [];
+  const pts_x    = new Float32Array(DRAW_W);
+  const pts_y    = new Float32Array(DRAW_W);
+  const sortArr  = new Array(DRAW_W);
+  const SLOPE_CAP = 1.5;  // caps x-shift so all columns advance upward fast enough
 
-  for (let k = 0; k < N; k++) {
-    const t     = k / (N - 1);              // 0 = top/flat, 1 = bottom/skyline
-    const flatY = MARGIN_PX + k * GAP_PX;  // position if fully flat
-    const yVals = new Float32Array(DRAW_W);
+  let currentY = new Float32Array(base);
+
+  for (let safety = 0; safety < 800; safety++) {
+    let maxY = 0;
+    for (let i = 0; i < DRAW_W; i++) if (currentY[i] > maxY) maxY = currentY[i];
+    if (maxY <= 0) break;
+
+    // Step 1: move each point GAP_PX along the upward surface normal
     for (let i = 0; i < DRAW_W; i++) {
-      yVals[i] = (1 - t) * flatY + t * base[i];
+      const iL  = Math.max(0, i - 4), iR = Math.min(DRAW_W - 1, i + 4);
+      const raw = (currentY[iR] - currentY[iL]) / (iR - iL);
+      const s   = Math.max(-SLOPE_CAP, Math.min(SLOPE_CAP, raw));
+      const len = Math.sqrt(1 + s * s);
+      pts_x[i] = i + GAP_PX * s / len;
+      pts_y[i] = currentY[i] - GAP_PX / len;
     }
+
+    // Step 2: sort by shifted x (nearly sorted — O(N) for TimSort)
+    for (let i = 0; i < DRAW_W; i++) sortArr[i] = i;
+    sortArr.sort((a, b) => pts_x[a] - pts_x[b]);
+
+    // Step 3: resample back to integer x columns via linear interpolation
+    const yVals = new Float32Array(DRAW_W);
+    let jj = 0;
+    for (let xi = 0; xi < DRAW_W; xi++) {
+      while (jj < DRAW_W - 2 && pts_x[sortArr[jj + 1]] <= xi) jj++;
+      const ia = sortArr[jj], ib = sortArr[Math.min(DRAW_W - 1, jj + 1)];
+      const xa = pts_x[ia], xb = pts_x[ib];
+      if (xb <= xa || xi <= xa) {
+        yVals[xi] = pts_y[ia];
+      } else {
+        const frac = Math.min(1, (xi - xa) / (xb - xa));
+        yVals[xi] = pts_y[ia] + frac * (pts_y[ib] - pts_y[ia]);
+      }
+    }
+
     lines.push(yVals);
+    currentY = yVals;
   }
+
   return lines;
 }
 
