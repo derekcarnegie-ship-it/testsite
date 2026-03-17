@@ -408,17 +408,19 @@ function generateAllLines(base, errorFactor, seeds) {
 
     // ── Step 1: compute 2D offset points along the surface normal ──────────
     // For each column i, move GAP_PX in the direction perpendicular (upward)
-    // to the local tangent. The tangent direction is (1, slope)/len, so the
-    // upward normal is (slope, -1)/len (pointing left–right and upward).
-    // This gives true constant perpendicular distance without per-column gaps
-    // that diverge when accumulated across many lines.
+    // to the local tangent. Tangent = (1, s)/len → upward normal = (s, -1)/len.
+    // Slope is clamped to ±SLOPE_CAP so that even at steep building edges the
+    // vertical component of the normal is at least GAP_PX/sqrt(1+CAP²) ≈ 2.2px,
+    // guaranteeing all columns advance upward fast enough to fill the canvas.
+    const SLOPE_CAP = 1.5;
     for (let i = 0; i < DRAW_W; i++) {
       const iL  = Math.max(0, i - 4);
       const iR  = Math.min(DRAW_W - 1, i + 4);
-      const s   = (currentY[iR] - currentY[iL]) / (iR - iL);
+      const raw = (currentY[iR] - currentY[iL]) / (iR - iL);
+      const s   = Math.max(-SLOPE_CAP, Math.min(SLOPE_CAP, raw));
       const len = Math.sqrt(1 + s * s);
-      pts_x[i] = i        + GAP_PX * s / len;   // x shifts along normal
-      pts_y[i] = currentY[i] - GAP_PX / len;    // y moves upward along normal
+      pts_x[i] = i            + GAP_PX * s / len;   // x shifts along normal
+      pts_y[i] = currentY[i] - GAP_PX / len;        // y moves upward along normal
     }
 
     // ── Step 2: sort offset points by their new x coordinate ───────────────
