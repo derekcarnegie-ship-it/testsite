@@ -305,7 +305,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
   /* 3-col data stories grid → single col at tablet/mobile */
   .blog-grid{grid-template-columns:1fr;grid-template-rows:auto}
   /* Fix card height: 2:1 ratio keeps thumbnails compact; use cover to fill the wide cell */
-  .blog-img{aspect-ratio:2/1}
+  .blog-img{aspect-ratio:2/1;height:auto}
   .blog-img img{object-fit:cover}
   /* Reset desktop scale zoom — not needed in single-col cover mode */
   .blog-grid .blog-card:nth-child(1) .blog-img img,
