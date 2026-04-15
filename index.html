@@ -290,15 +290,12 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
 .footer-copy{text-align:center;font-size:.7rem;color:var(--muted-light)}
 
 /* ════════════════════════════════════ RESPONSIVE */
-.mobile-profile-wrap{display:none}
 @media(max-width:1024px){
   .ps-left{padding:3rem 2rem 3.5rem max(1.5rem,calc(50vw - var(--max)/2 + 1.5rem))}
   .profile-scrolly{grid-template-columns:1fr}
   .ps-right{display:none}
   .pstep{min-height:auto;opacity:1;padding:1.8rem 0}
   .expertise-zone-label{position:static;margin-bottom:.8rem}
-  .mobile-profile-wrap{display:block;width:100%;height:280px;overflow:hidden;margin-bottom:1.5rem;border-radius:4px}
-  .mobile-profile-wrap img{width:100%;height:100%;object-fit:cover;object-position:center top;max-width:none}
 }
 @media(max-width:900px){
   .ps-left{padding:2.5rem 1.5rem 3rem}
@@ -465,6 +462,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
         <div class="carousel-track" id="carousel-track">
 
           <a href="https://www.oecd.org/en/publications/fdi-qualities-review-of-egypt_04ed341a-en.html" target="_blank" class="work-card">
+            <div class="work-card-img"><img src="work-thumbs/w01.png" alt=""/></div>
             <div class="work-card-body">
               <h3>FDI Qualities Review of Egypt</h3>
               <p class="card-pub">OECD, 2026</p>
@@ -480,6 +478,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
           </a>
 
           <a href="https://www.oecd.org/en/publications/2025/11/roadmap-for-sustainable-investment-policy-reforms-in-uzbekistan_68204584.html" target="_blank" class="work-card">
+            <div class="work-card-img"><img src="work-thumbs/w03.png" alt=""/></div>
             <div class="work-card-body">
               <h3>Roadmap for Sustainable Investment Policy Reforms in Uzbekistan</h3>
               <p class="card-pub">OECD, 2025</p>
@@ -487,6 +486,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
           </a>
 
           <a href="https://www.intracen.org/file/beitiraqhousingmarketreportv5webpdf" target="_blank" class="work-card">
+            <div class="work-card-img"><img src="work-thumbs/w04.png" alt=""/></div>
             <div class="work-card-body">
               <h3>Iraq's Housing Construction Sector: Market Report</h3>
               <p class="card-pub">ITC, 2025</p>
@@ -494,6 +494,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
           </a>
 
           <a href="https://www.intracen.org/file/beitiraqmsmereportv3webpdf" target="_blank" class="work-card">
+            <div class="work-card-img"><img src="work-thumbs/w05.png" alt=""/></div>
             <div class="work-card-body">
               <h3>Iraq's Housing Construction Sector: An MSME Perspective</h3>
               <p class="card-pub">ITC, 2025</p>
@@ -517,7 +518,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
           </a>
 
           <a href="https://unctad.org/system/files/official-document/ditc2024d1_en.pdf" target="_blank" class="work-card">
-            <div class="work-card-img"><img src="work-thumbs/w08.jpg" alt=""/></div>
+            <div class="work-card-img"><img src="work-thumbs/w08.png" alt=""/></div>
             <div class="work-card-body">
               <h3>The Impact of Non-Tariff Measures on Women's e-Commerce Businesses in Developing Countries</h3>
               <p class="card-pub">UNCTAD, 2024</p>
@@ -525,6 +526,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
           </a>
 
           <a href="https://www.oecd.org/content/dam/oecd/en/publications/reports/2024/09/oecd-investment-policy-reviews-mauritius-2024_fce0a704/442d4c99-en.pdf" target="_blank" class="work-card">
+            <div class="work-card-img"><img src="work-thumbs/w09.png" alt=""/></div>
             <div class="work-card-body">
               <h3>OECD Investment Policy Reviews: Mauritius 2024</h3>
               <p class="card-pub">OECD, 2024</p>
@@ -564,6 +566,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
           </a>
 
           <a href="https://www.intracen.org/file/promotingsmecompetitivenessinsouthsudanpdf" target="_blank" class="work-card">
+            <div class="work-card-img"><img src="work-thumbs/w14.png" alt=""/></div>
             <div class="work-card-body">
               <h3>Promoting SME Competitiveness in South Sudan</h3>
               <p class="card-pub">ITC, 2022</p>
@@ -588,10 +591,6 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
   <div class="profile-scrolly">
 
     <div class="ps-left">
-
-      <div class="mobile-profile-wrap">
-        <img src="derek-profile-new.jpg" alt="Derek Carnegie" />
-      </div>
 
       <!-- Bio step 1: Bringing clarity to complexity -->
       <div class="pstep pstep-first" data-visual="photo">
