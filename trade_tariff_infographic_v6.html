@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>U.S. Trade – Recent Trends</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #000;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────────────
+// [year, monthIdx(0=Jan), world, china, mexico, canada, taiwan, asean]
+// Source: U.S. Census Bureau via Clean - US monthly trade - all countries (24 March 2023).xlsx
+const RAW = [
+  [2023, 0, 254350,38253,36988,34460, 6682,25853],
+  [2023, 1, 230790,30621,35681,32246, 6601,22524],
+  [2023, 2, 262822,30790,42825,37558, 6823,25539],
+  [2023, 3, 250670,33077,38076,34418, 6450,25265],
+  [2023, 4, 264148,35891,41377,36813, 7540,25203],
+  [2023, 5, 258114,34334,41100,35111, 6764,25406],
+  [2023, 6, 255662,36099,38904,33098, 7337,26509],
+  [2023, 7, 266023,36725,41759,36235, 8313,28151],
+  [2023, 8, 261282,40282,39543,35019, 8007,27125],
+  [2023, 9, 276810,41571,42924,36628, 8667,28460],
+  [2023,10, 255976,35495,39810,36141, 7870,25730],
+  [2023,11, 255976,35495,39810,36141, 7870,25730],
+  [2024, 0, 253797,35794,38042,33309, 8163,25186],
+  [2024, 1, 242629,31895,40245,33395, 6781,24950],
+  [2024, 2, 259145,29941,41563,34218, 7939,26995],
+  [2024, 3, 271405,31630,43066,34884, 9104,27962],
+  [2024, 4, 275179,35037,43881,35669, 8980,28522],
+  [2024, 5, 265567,34114,42245,34393, 9866,28980],
+  [2024, 6, 287942,40837,41940,35799,12996,31666],
+  [2024, 7, 277609,39851,43748,33036,11779,29860],
+  [2024, 8, 286232,43074,44155,34633,10585,33873],
+  [2024, 9, 288827,41464,45492,34463,10710,32985],
+  [2024,10, 274261,37772,42249,33438, 9266,30551],
+  [2024,11, 284796,37539,39225,35457,10096,30722],
+  [2025, 0, 317306,41639,41679,38338,11070,32620],
+  [2025, 1, 288187,31635,41639,34925,10588,29538],
+  [2025, 2, 342603,29384,47982,35668,12403,36279],
+  [2025, 3, 276086,25378,41869,29438,14613,35851],
+  [2025, 4, 276517,20494,46342,30168,16386,36509],
+  [2025, 5, 265533,18949,44873,29688,16921,39667],
+  [2025, 6, 292245,26411,45366,32172,19506,40978],
+  [2025, 7, 262632,25133,45146,29404,17736,37198],
+  [2025, 8, 262632,25133,45146,29404,17736,37198],
+  [2025, 9, 274190,23887,48524,31121,22253,40133],
+  [2025,10, 262571,20951,44516,28360,20259,41546],
+  [2025,11, 262571,20951,44516,28360,20259,41546],
+  [2026, 0, 282235,21104,42360,31774,24696,42757],
+];
+const NUM_PTS = 37;
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const AGED_LIGHT = [215, 213, 210];
+
+// ─── PANELS ────────────────────────────────────────────────────────────────────
+const PANELS = [
+  {
+    max: 342603,
+    countries: [
+      { label: 'World', col: 2, lead: [67,127,136], tail: [130,152,155] },
+    ],
+    text: [
+      { text: 'Global impacts:', bold: true },
+      { text: ' In nominal terms, US total imports from the ' },
+      { text: 'World' },
+      { text: ' fell by 3% between April and December 2025, when compared with the same period in 2024.' },
+    ],
+  },
+  {
+    max: 48524,
+    countries: [
+      { label: 'Mexico', col: 4, lead: [127,175,110], tail: [155,178,148] },
+      { label: 'Canada', col: 5, lead: [207, 91, 52], tail: [183,148,136] },
+    ],
+    text: [
+      { text: 'Border trade:', bold: true },
+      { text: ' Total US imports from its neighbours have not changed much, with ' },
+      { text: "Mexico's" },
+      { text: ' exports showing greater resilience than ' },
+      { text: "Canada's." },
+    ],
+  },
+  {
+    max: 43074,
+    countries: [
+      { label: 'China', col: 3, lead: [138,161,177], tail: [158,168,176] },
+      { label: 'ASEAN', col: 7, lead: [236,171, 70], tail: [191,172,132] },
+    ],
+    text: [
+      { text: 'Shifting manufacturing:', bold: true },
+      { text: ' ' },
+      { text: 'ASEAN' },
+      { text: ' exporters (especially Vietnam and Thailand) have stepped in as high tariffs have hit trade with ' },
+      { text: 'China' },
+      { text: '.' },
+    ],
+  },
+  {
+    max: 24696,
+    countries: [
+      { label: 'Taiwan', col: 6, lead: [74,80,67], tail: [128,131,124] },
+    ],
+    text: [
+      { text: 'AI boom:', bold: true },
+      { text: ' High demand for semiconductors from ' },
+      { text: 'Taiwan' },
+      { text: ' and tariff exemptions led to rapid growth in trade.' },
+    ],
+  },
+];
+
+// ─── CANVAS ────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+let W, chartCX, chartCY, maxR, lblR, lw;
+let texCanvas = null;
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  W       = Math.min(window.innerWidth, window.innerHeight) - 40;
+  canvas.width  = W * dpr;
+  canvas.height = W * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = W + 'px';
+  ctx.scale(dpr, dpr);
+  chartCX = W * 0.632;
+  chartCY = W * 0.500;
+  maxR    = W * 0.245;
+  lblR    = W * 0.304;
+  lw      = W / 700;
+}
+// ─── PAPER TEXTURE ─────────────────────────────────────────────────────────────
+// Generated once per resize; warm-grain noise overlaid at low opacity each frame.
+function buildTexture() {
+  const dpr = window.devicePixelRatio || 1;
+  const pw  = Math.ceil(W * dpr / 2);   // half-res → each noise pixel = 2×2 CSS px
+  texCanvas = document.createElement('canvas');
+  texCanvas.width = texCanvas.height = pw;
+  const tc = texCanvas.getContext('2d');
+  const id = tc.createImageData(pw, pw);
+  const d  = id.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const v  = (Math.random() * 2 - 1) * 80;   // ±80 luminance swing
+    d[i]   = clamp(128 + v,        0, 255);     // R — slightly warm
+    d[i+1] = clamp(128 + v * 0.93, 0, 255);     // G
+    d[i+2] = clamp(128 + v * 0.82, 0, 255);     // B
+    d[i+3] = 255;
+  }
+  tc.putImageData(id, 0, 0);
+}
+
+window.addEventListener('resize', () => { resize(); buildTexture(); });
+resize();
+
+// ─── MATH HELPERS ──────────────────────────────────────────────────────────────
+const lerp  = (a, b, t) => a + (b - a) * t;
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+buildTexture(); // called after clamp is defined
+const eio   = t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+
+function mAngle(mi) { return -Math.PI / 2 + (mi / 12) * Math.PI * 2; }
+function pXY(mi, val, scale) {
+  const a = mAngle(mi), r = (val / scale) * maxR;
+  return [chartCX + r * Math.cos(a), chartCY + r * Math.sin(a)];
+}
+
+function niceTicks(maxVal, n = 4) {
+  const raw  = maxVal / n;
+  const mag  = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  const step = norm < 1.5 ? mag : norm < 3.5 ? 2*mag : norm < 7.5 ? 5*mag : 10*mag;
+  const ticks = [];
+  for (let t = step; t <= maxVal * 1.05 && ticks.length <= n; t += step) ticks.push(t);
+  return ticks;
+}
+
+function fmtB(vMillion) {
+  const b = vMillion / 1000;
+  if (b >= 100) return Math.round(b) + 'B';
+  if (b >= 10)  return b.toFixed(0) + 'B';
+  return b.toFixed(1) + 'B';
+}
+
+// ─── CATMULL-ROM ───────────────────────────────────────────────────────────────
+function crPt(p0, p1, p2, p3, t) {
+  const t2 = t*t, t3 = t2*t;
+  return [
+    0.5*((2*p1[0])+(-p0[0]+p2[0])*t+(2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*t2+(-p0[0]+3*p1[0]-3*p2[0]+p3[0])*t3),
+    0.5*((2*p1[1])+(-p0[1]+p2[1])*t+(2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*t2+(-p0[1]+3*p1[1]-3*p2[1]+p3[1])*t3),
+  ];
+}
+
+// ─── DRAW PATH (solid colour) ──────────────────────────────────────────────────
+function drawPath(pts, startFrac, endFrac, color, width, alpha) {
+  if (endFrac <= startFrac + 0.001) return;
+  const n = pts.length, STEPS = 8;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = width;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.beginPath();
+  let first = true;
+  const iStart = Math.floor(startFrac), iEnd = Math.min(Math.floor(endFrac), n - 2);
+  for (let i = iStart; i <= iEnd; i++) {
+    const tS = (i === iStart) ? (startFrac - i) : 0;
+    const tE = (i === iEnd)   ? clamp(endFrac - i, 0, 1) : 1;
+    const p0 = pts[Math.max(0,i-1)], p1 = pts[i];
+    const p2 = pts[Math.min(n-1,i+1)], p3 = pts[Math.min(n-1,i+2)];
+    for (let s = 0; s <= STEPS; s++) {
+      const [x,y] = crPt(p0,p1,p2,p3, lerp(tS,tE,s/STEPS));
+      first ? (ctx.moveTo(x,y), first=false) : ctx.lineTo(x,y);
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ─── GRADIENT TRAIL (16-pass, no dot artefacts) ────────────────────────────────
+// leadRGB → tip colour;  tailRGB → far-tail colour (greyed version of accent)
+function drawTrail(pts, trailStart, leadFrac, width, masterAlpha, leadRGB, tailRGB) {
+  if (leadFrac <= trailStart + 0.001) return;
+  const span = leadFrac - trailStart;
+  const n = pts.length;
+  const PASSES = 16, STEPS = 8;
+  ctx.save();
+  ctx.lineWidth = width;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  for (let p = 0; p < PASSES; p++) {
+    const passStart = trailStart + (p / PASSES) * span;
+    const midFrac   = (p + 0.5) / PASSES;
+    const [r,g,b]   = tailRGB.map((v,k) => Math.round(lerp(v, leadRGB[k], midFrac)));
+    ctx.globalAlpha = masterAlpha * lerp(0.38, 1.0, midFrac) / PASSES * 1.9;
+    ctx.strokeStyle = `rgb(${r},${g},${b})`;
+    ctx.beginPath();
+    const iS = Math.floor(passStart), iE = Math.min(Math.floor(leadFrac), n - 2);
+    let first = true;
+    for (let i = iS; i <= iE; i++) {
+      const tS = (i === iS) ? (passStart - iS) : 0;
+      const tE = (i === iE) ? clamp(leadFrac - i, 0, 1) : 1;
+      const p0 = pts[Math.max(0,i-1)], p1 = pts[i];
+      const p2 = pts[Math.min(n-1,i+1)], p3 = pts[Math.min(n-1,i+2)];
+      for (let s = 0; s <= STEPS; s++) {
+        const [x,y] = crPt(p0,p1,p2,p3, lerp(tS,tE,s/STEPS));
+        first ? (ctx.moveTo(x,y), first=false) : ctx.lineTo(x,y);
+      }
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ─── AGE-GRADIENT PATH (history behind the trail) ─────────────────────────────
+// darkRGB = tail colour of trail (seamless join); lightRGB = oldest/faintest
+function drawAgedPath(pts, endFrac, prog, darkRGB, lightRGB) {
+  const n = pts.length, STEPS = 8;
+  const PASSES = 8, MAX_AGE = 36;
+  ctx.save();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.lineWidth = lw * 7;
+  for (let p = 0; p < PASSES; p++) {
+    const f = p / PASSES;
+    const passStart = Math.max(0, prog - MAX_AGE * (1 - f));
+    if (passStart > endFrac - 0.001) continue;
+    const [r,g,b] = darkRGB.map((v,k) => Math.round(lerp(lightRGB[k], v, f)));
+    ctx.globalAlpha = p === 0 ? 0.55 : 0.20;
+    ctx.strokeStyle = `rgb(${r},${g},${b})`;
+    ctx.beginPath();
+    let first = true;
+    const iS = Math.floor(passStart);
+    const iE = Math.min(Math.floor(endFrac), n - 2);
+    for (let i = iS; i <= iE; i++) {
+      const tS   = i === iS ? passStart - iS : 0;
+      const tEnd = i === iE ? clamp(endFrac - i, 0, 1) : 1;
+      const p0 = pts[Math.max(0,i-1)], p1 = pts[i];
+      const p2 = pts[Math.min(n-1,i+1)], p3 = pts[Math.min(n-1,i+2)];
+      for (let s = 0; s <= STEPS; s++) {
+        const [x,y] = crPt(p0,p1,p2,p3, lerp(tS, tEnd, s/STEPS));
+        first ? (ctx.moveTo(x,y), first=false) : ctx.lineTo(x,y);
+      }
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ─── GRID ──────────────────────────────────────────────────────────────────────
+function drawGrid(scale) {
+  ctx.save();
+  ctx.globalAlpha = 0.48;
+  ctx.strokeStyle = '#C4BEB6';
+  ctx.lineWidth   = lw * 0.7;
+  for (let m = 0; m < 12; m++) {
+    const a = mAngle(m);
+    ctx.beginPath();
+    ctx.moveTo(chartCX, chartCY);
+    ctx.lineTo(chartCX + maxR * Math.cos(a), chartCY + maxR * Math.sin(a));
+    ctx.stroke();
+  }
+  ctx.setLineDash([3*lw, 4*lw]);
+  const ticks = niceTicks(scale);
+  for (const tick of ticks) {
+    const r = (tick / scale) * maxR;
+    if (r > maxR * 1.02) break;
+    ctx.beginPath(); ctx.arc(chartCX, chartCY, r, 0, Math.PI*2); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.restore();
+  // Ring labels
+  ctx.save();
+  ctx.globalAlpha = 0.58;
+  ctx.fillStyle = '#9A9590';
+  const fs = Math.round(W * 0.019);
+  ctx.font = `${fs}px 'Segoe UI',system-ui,sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  for (const tick of niceTicks(scale)) {
+    const r = (tick / scale) * maxR;
+    if (r > maxR * 1.02) break;
+    ctx.fillText(fmtB(tick), chartCX, chartCY - r - 2*lw);
+  }
+  ctx.restore();
+}
+
+// ─── MONTH LABELS ──────────────────────────────────────────────────────────────
+function drawMonthLabels() {
+  ctx.save();
+  ctx.fillStyle = '#BEBBB6';
+  ctx.letterSpacing = `${(W * 0.0016).toFixed(1)}px`;
+  ctx.font = `${Math.round(W*0.020)}px 'Segoe UI',system-ui,sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let m = 0; m < 12; m++) {
+    const a = mAngle(m);
+    ctx.fillText(MONTHS[m], chartCX + lblR*Math.cos(a), chartCY + lblR*Math.sin(a));
+  }
+  ctx.restore();
+}
+
+// ─── RICH TEXT RENDERER ────────────────────────────────────────────────────────
+// segments: [{text, bold?, color?}]
+// Renders with word-wrap, mixed styles within lines.
+function drawRichText(segments, x, y, maxWidth, baseFS, lineHeight) {
+  const F = "'Segoe UI',system-ui,sans-serif";
+  const DEFAULT_COLOR = '#5C5654';
+
+  // Build flat word list. Whitespace tokens are attached to the PREVIOUS word's
+  // trailing space, so spaces at the start of a segment (e.g. ' fell') are
+  // correctly joined to the preceding word ('World ').
+  const words = [];
+  for (const seg of segments) {
+    const parts = seg.text.split(/(\s+)/);
+    for (const part of parts) {
+      if (!part) continue;
+      if (/^\s+$/.test(part)) {
+        // Whitespace → append to previous word's trailing space
+        if (words.length > 0) words[words.length - 1].space += part;
+      } else {
+        words.push({ word: part, space: '', bold: !!seg.bold, color: seg.color || DEFAULT_COLOR });
+      }
+    }
+  }
+
+  // Width of a word including its trailing space
+  function wordWidth(w) {
+    ctx.font = w.bold ? `bold ${baseFS}px ${F}` : `${baseFS}px ${F}`;
+    const ww = ctx.measureText(w.word).width;
+    ctx.font = `${baseFS}px ${F}`;
+    const sw = w.space ? ctx.measureText(w.space).width : 0;
+    return ww + sw;
+  }
+
+  // Build lines by word-wrapping
+  const lines = [];
+  let line = [], lineW = 0;
+  for (const w of words) {
+    const ww = wordWidth(w);
+    if (line.length > 0 && lineW + ww > maxWidth) {
+      lines.push(line);
+      line = [w]; lineW = ww;
+    } else {
+      line.push(w); lineW += ww;
+    }
+  }
+  if (line.length > 0) lines.push(line);
+
+  // Render each line — left-aligned
+  ctx.save();
+  ctx.textBaseline = 'top';
+  for (let li = 0; li < lines.length; li++) {
+    let cx = x;
+    for (const w of lines[li]) {
+      ctx.font = w.bold ? `bold ${baseFS}px ${F}` : `${baseFS}px ${F}`;
+      ctx.fillStyle = w.color;
+      ctx.fillText(w.word, cx, y + li * lineHeight);
+      const ww = ctx.measureText(w.word).width;
+      ctx.font = `${baseFS}px ${F}`;
+      cx += ww + (w.space ? ctx.measureText(w.space).width : 0);
+    }
+  }
+  ctx.restore();
+  return y + lines.length * lineHeight;  // bottom edge of rendered text
+}
+
+// ─── HORIZONTAL RULE ───────────────────────────────────────────────────────────
+function drawRule(y, x, width, color) {
+  const cx = x + width * 0.40;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = Math.max(1, W * 0.0018);
+  ctx.lineCap     = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - width * 0.4, y);
+  ctx.lineTo(cx + width * 0.4, y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ─── INFO TEXT OVERLAY ─────────────────────────────────────────────────────────
+function drawInfoText(panel, curYear) {
+  const F        = "'Segoe UI',system-ui,sans-serif";
+  const PALE_BLUE = '#437F88';
+  ctx.save();
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+
+  // ── Subtitle font (measured first, used to auto-size the title) ───────────
+  const subFS      = Math.round(W * 0.037);
+  const subSpacing = `${(W * 0.0012).toFixed(1)}px`;
+  ctx.letterSpacing = subSpacing;
+  ctx.font = `bold ${subFS}px ${F}`;
+  const subW = ctx.measureText('RECENT TRENDS IN IMPORTS').width;
+
+  // ── Main title: auto-sized to match subtitle width ────────────────────────
+  const titleSpacing = `${(W * 0.0024).toFixed(1)}px`;
+  ctx.letterSpacing  = titleSpacing;
+  let lo = 10, hi = Math.round(W * 0.22);
+  for (let i = 0; i < 18; i++) {
+    const mid = Math.round((lo + hi) / 2);
+    ctx.font = `bold ${mid}px ${F}`;
+    if (ctx.measureText('U.S. TARIFFS').width < subW) lo = mid; else hi = mid;
+  }
+  const titleFS = lo;
+  const titleY  = W * 0.022;
+  ctx.fillStyle = '#000001';
+  ctx.font = `bold ${titleFS}px ${F}`;
+  ctx.fillText('U.S. TARIFFS', W * 0.030, titleY);
+
+  // ── Subtitle: RECENT TRENDS IN IMPORTS (pale blue) — nudged up 33% of line ─
+  const subtitleY = titleY + titleFS + W * 0.008 - subFS * 0.33;
+  ctx.fillStyle     = PALE_BLUE;
+  ctx.letterSpacing = subSpacing;
+  ctx.font = `bold ${subFS}px ${F}`;
+  ctx.fillText('RECENT TRENDS IN IMPORTS', W * 0.030, subtitleY);
+
+  // ── Sub-subtitle (larger font) ────────────────────────────────────────────
+  const subSubFS = Math.round(W * 0.026);
+  const subSubY  = subtitleY + subFS + W * 0.012;
+  ctx.fillStyle     = '#000001';
+  ctx.letterSpacing = `${(W * 0.0030).toFixed(1)}px`;
+  ctx.font = `bold ${subSubFS}px ${F}`;
+  ctx.fillText('SELECTED ECONOMIES',   W * 0.030, subSubY);
+  ctx.fillText('JAN 2023 TO JAN 2026', W * 0.030, subSubY + subSubFS * 1.2);
+  ctx.letterSpacing = '0px';
+
+  // ── Shared text-column constants ──────────────────────────────────────────
+  const bx           = W * 0.030;
+  const richMaxW     = chartCX - lblR - bx - W * 0.035;
+  const ruleGap      = W * 0.013;
+  const cNameY       = chartCY + lblR + W * 0.038;   // top of year label = hard ceiling
+  const subSubBottom = subSubY + subSubFS * 2.2;
+
+  // ── First text box content (defined early so font-fitting can measure it) ─
+  const fnSegs = [
+    { text: 'Between February and October 2025, the U.S. average effective tariff rate more than quadrupled. Most of this increase occurred in April, though new tariffs were imposed before this as well, including on Canada, China, and Mexico, and on steel and aluminum imports.' },
+  ];
+
+  // ── Auto-fit: find largest richFS ≤ W*0.024 where both boxes fit above cNameY
+  function countLines(segs, maxW, fs) {
+    const words = [];
+    for (const seg of segs) {
+      const parts = seg.text.split(' ');
+      for (let i = 0; i < parts.length; i++) {
+        if (parts[i] !== '') words.push({ t: parts[i] + (i < parts.length - 1 ? ' ' : ''), bold: !!seg.bold });
+      }
+    }
+    let lines = 1, lineW = 0;
+    for (const w of words) {
+      ctx.font = (w.bold ? 'bold ' : '') + `${fs}px ${F}`;
+      const ww = ctx.measureText(w.t).width;
+      if (lineW > 0 && lineW + ww > maxW) { lines++; lineW = ww; }
+      else lineW += ww;
+    }
+    return lines;
+  }
+  let richFS = Math.round(W * 0.024);   // start smaller than previous 0.028
+  for (; richFS >= 8; richFS--) {
+    const lh   = richFS * 0.99;
+    const fnY_ = subSubBottom + 2 * ruleGap + lh;   // mirrors actual fnY calculation
+    const l1   = countLines(fnSegs,      richMaxW, richFS);
+    const l2   = countLines(panel.text,  richMaxW, richFS);
+    if (fnY_ + (l1 + l2) * lh + lh * 1.5 <= cNameY) break;
+  }
+  const richLH = richFS * 0.99;
+
+  // ── Blue rule 1 — between sub-subtitle and first text box ────────────────
+  const rule1Y = subSubBottom + ruleGap + richLH;
+  drawRule(rule1Y, bx, richMaxW, PALE_BLUE);
+
+  // ── First text box ("Between February…") ─────────────────────────────────
+  const fnY      = rule1Y + ruleGap;
+  const fnBottom = drawRichText(fnSegs, bx, fnY, richMaxW, richFS, richLH);
+
+  // ── Blue rule 2 — centred in the gap between the two text boxes ──────────
+  const midGap = richLH * 1.5;
+  const rule2Y = fnBottom + midGap * 0.5;
+  drawRule(rule2Y, bx, richMaxW, PALE_BLUE);
+
+  // ── Panel-specific text box (same richFS/richLH as first box) ────────────
+  const richY = fnBottom + midGap;
+  drawRichText(panel.text, bx, richY, richMaxW, richFS, richLH);
+
+  // ── Country name(s) + Year (below chart) ────────────────────────────────
+  // cNameY already defined above (used for text-box ceiling)
+  const nameFS = Math.round(W * 0.050);
+  const yearFS = Math.round(W * 0.034);
+  const nameLH = nameFS * 1.08;
+  ctx.textBaseline = 'top';
+  ctx.letterSpacing = `${(W * 0.0018).toFixed(1)}px`;
+  ctx.font = `bold ${nameFS}px ${F}`;
+
+  if (panel.countries.length === 1) {
+    // Single country — centred, in its lead colour
+    const c = panel.countries[0];
+    ctx.textAlign = 'center';
+    ctx.fillStyle = `rgb(${c.lead.join(',')})`;
+    ctx.fillText(c.label, chartCX, cNameY);
+  } else {
+    // Multiple countries — inline, each in its own colour, joined by " & "
+    // "&" is normal-weight grey (same as year); country names are bold + coloured
+    const sep      = ' & ';
+    const boldFont = `bold ${nameFS}px ${F}`;
+    const normFont = `${nameFS}px ${F}`;
+    // Measure with correct per-token fonts for accurate centering
+    ctx.font = normFont;
+    const sepW = ctx.measureText(sep).width;
+    let totalW = sepW * (panel.countries.length - 1);
+    for (const co of panel.countries) { ctx.font = boldFont; totalW += ctx.measureText(co.label).width; }
+    let nx = chartCX - totalW / 2;
+    ctx.textAlign = 'left';
+    for (let i = 0; i < panel.countries.length; i++) {
+      if (i > 0) {
+        ctx.font      = normFont;
+        ctx.fillStyle = '#8C8A86';
+        ctx.fillText(sep, nx, cNameY);
+        nx += sepW;
+      }
+      ctx.font = boldFont;
+      const co = panel.countries[i];
+      ctx.fillStyle = `rgb(${co.lead.join(',')})`;
+      ctx.fillText(co.label, nx, cNameY);
+      nx += ctx.measureText(co.label).width;
+    }
+  }
+
+  // Year — grey, not bold, directly below name(s)
+  ctx.textAlign     = 'center';
+  ctx.fillStyle     = '#8C8A86';
+  ctx.letterSpacing = `${(W * 0.0020).toFixed(1)}px`;
+  ctx.font          = `${yearFS}px ${F}`;
+  ctx.fillText(String(curYear), chartCX, cNameY + nameLH);
+  ctx.letterSpacing = '0px';
+  const nameBlockBottom = cNameY + nameLH + yearFS * 1.22;
+
+  // ── Notes / Sources (bottom-left) ────────────────────────────────────────
+  ctx.textAlign    = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle    = '#8C8A86';
+  ctx.letterSpacing = '0.2px';
+  const noteFS = Math.round(W*0.018);
+  const noteY  = nameBlockBottom + W * 0.018;
+  ctx.font = `italic ${noteFS}px ${F}`;
+  ctx.fillText('Note', W*0.030, noteY);
+  const noteW = ctx.measureText('Note').width;
+  ctx.font = `${noteFS}px ${F}`;
+  ctx.fillText(': All values are in USD billions (current prices).', W*0.030 + noteW, noteY);
+  ctx.font = `italic ${noteFS}px ${F}`;
+  ctx.fillText('Source', W*0.030, noteY + W*0.026);
+  const srcW = ctx.measureText('Source').width;
+  ctx.font = `${noteFS}px ${F}`;
+  ctx.fillText(': U.S. Census Bureau.', W*0.030 + srcW, noteY + W*0.026);
+  ctx.letterSpacing = '0px';
+
+  // ── Website (bottom-right) ────────────────────────────────────────────────
+  ctx.textAlign    = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillStyle    = '#437F88';
+  ctx.letterSpacing = `${(W * 0.0014).toFixed(1)}px`;
+  ctx.font = `bold ${Math.round(W*0.019)}px ${F}`;
+  ctx.fillText('derekcarnegie.com', W*0.975, W*0.980);
+  ctx.letterSpacing = '0px';
+
+  ctx.restore();
+}
+
+// ─── ANIMATION TIMING ──────────────────────────────────────────────────────────
+// All durations scaled ×1.25 from v2 baseline, then ×1.25 again (total ×1.5625)
+// Indices 0-23 (2023-2024): draw at 125% speed → 2875ms
+// Indices 23-36 (2025-2026): draw at  75% speed → 2709ms
+const DUR_SCALE = 1050;
+const DUR_FAST  = 2760;   // 3450 × 0.80 — 2023-2024 20% faster
+const DUR_SLOW  = 3576;   // 3251 × 1.10 — 2025-Jan2026 10% slower
+const DUR_DRAW  = DUR_FAST + DUR_SLOW;  // 6701ms
+const DUR_HOLD  = 2050;   // 1800 + 250ms extra pause after animation
+const DUR_TOTAL = DUR_DRAW + DUR_HOLD;  // 8751ms
+
+function timeToProgress(drawElapsed) {
+  if (drawElapsed <= 0) return 0;
+  if (drawElapsed <= DUR_FAST) return (drawElapsed / DUR_FAST) * 23;
+  return Math.min(23 + ((drawElapsed - DUR_FAST) / DUR_SLOW) * 13, 36);
+}
+
+// ─── STATE ─────────────────────────────────────────────────────────────────────
+let state = {
+  ci:      0,
+  t0:      null,
+  prevMax: PANELS[0].max,
+};
+
+// ─── MAIN LOOP ─────────────────────────────────────────────────────────────────
+function frame(ts) {
+  if (!state.t0) state.t0 = ts;
+  const elapsed = ts - state.t0;
+
+  // Advance to next panel
+  if (elapsed >= DUR_TOTAL) {
+    state.prevMax = PANELS[state.ci].max;
+    state.ci      = (state.ci + 1) % PANELS.length;
+    state.t0      = ts;
+    requestAnimationFrame(frame);
+    return;
+  }
+
+  const panel  = PANELS[state.ci];
+  const target = panel.max;
+
+  // Scale tween
+  const scaleFrac    = clamp(elapsed / DUR_SCALE, 0, 1);
+  const currentScale = lerp(state.prevMax, target, eio(scaleFrac));
+
+  // Draw progress — variable speed
+  const drawElapsed = Math.max(0, elapsed - DUR_SCALE);
+  const prog        = timeToProgress(clamp(drawElapsed, 0, DUR_DRAW));
+
+  // Trail window
+  const trailStart = Math.max(0, prog - 3);
+
+  // Current year (for display)
+  const leadI   = clamp(Math.floor(prog), 0, NUM_PTS - 1);
+  const curYear = RAW[leadI][0];
+
+  // Pre-compute pts for every country in this panel (cached for two-pass rendering)
+  const ptsList = panel.countries.map(c =>
+    RAW.map(r => pXY(r[1], r[c.col], currentScale))
+  );
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  ctx.clearRect(0, 0, W, W);
+  ctx.fillStyle = '#FAF5EB';
+  ctx.fillRect(0, 0, W, W);
+  // Paper grain texture
+  if (texCanvas) {
+    ctx.save();
+    ctx.globalAlpha = 0.038;
+    ctx.drawImage(texCanvas, 0, 0, W, W);
+    ctx.restore();
+  }
+
+  drawGrid(currentScale);
+
+  // Pass 1: aged history paths (all countries, so they don't occlude each other's trails)
+  panel.countries.forEach((c, i) => {
+    drawAgedPath(ptsList[i], prog, prog, c.tail, AGED_LIGHT);
+  });
+
+  // Pass 2: gradient trails on top
+  panel.countries.forEach((c, i) => {
+    drawTrail(ptsList[i], trailStart, prog, lw * 10, 1.0, c.lead, c.tail);
+  });
+
+  drawMonthLabels();
+  drawInfoText(panel, curYear);
+
+  requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
