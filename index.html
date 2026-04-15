@@ -54,7 +54,7 @@ nav{
 }
 nav.scrolled{background:rgba(15,18,33,.94);backdrop-filter:blur(18px);border-color:var(--hero-line)}
 .nav-brand{display:flex;align-items:center;gap:.6rem}
-.nav-dc-logo{height:30px;width:auto;filter:brightness(0) invert(1)}
+.nav-dc-logo{font-family:var(--font-serif);font-size:1.25rem;font-weight:600;color:var(--text-light);letter-spacing:.05em;line-height:1;flex-shrink:0}
 .nav-title{font-family:var(--font-serif);font-size:.98rem;color:var(--text-light);letter-spacing:.02em}
 .nav-links{display:flex;gap:2rem;align-items:center}
 .nav-links a{font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted-light);transition:color .2s}
@@ -346,7 +346,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
 <!-- ═══ NAV ══════════════════════════════════════════════════════════════ -->
 <nav id="main-nav">
   <a href="#intro" class="nav-brand">
-    <img src="https://www.derekcarnegie.com/-_-/res/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/images/files/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/0d128039-35e5-4973-9fdd-3c6b61584672/256-244/1923d5a07b8628713c987f8f68da6907cba08d14" class="nav-dc-logo" alt="DC" />
+    <span class="nav-dc-logo">DC</span>
     <span class="nav-title">Derek Carnegie</span>
   </a>
   <div class="nav-links">
@@ -1013,6 +1013,13 @@ track.addEventListener('touchend', e => {
     else goTo(offset - 1);
   }
 }, { passive: true });
+
+// ── Hide carousel image boxes when CDN images fail to load ────────────────
+document.querySelectorAll('.work-card-img img').forEach(img => {
+  const hide = () => { const w = img.closest('.work-card-img'); if (w) w.style.display = 'none'; };
+  if (img.complete) { if (!img.naturalWidth) hide(); }
+  else { img.addEventListener('error', hide); }
+});
 
 // ── Lightbox ──────────────────────────────────────────────────────────────
 const lbOverlay   = document.getElementById('lb-overlay');
