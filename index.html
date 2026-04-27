@@ -12,7 +12,12 @@
 </script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Derek Carnegie — Economic Intelligence & Data Visualisation</title>
+<title>Derek Carnegie — Economic research & policy analysis</title>
+<meta name="description" content="Derek Carnegie — Economic research & policy analysis" />
+<link rel="icon" type="image/x-icon" href="favicon.ico" />
+<link rel="icon" type="image/png" href="favicon.png" />
+<link rel="shortcut icon" type="image/x-icon" href="favicon.ico" />
+<link rel="apple-touch-icon" href="favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400&display=swap" rel="stylesheet" />
@@ -126,15 +131,6 @@ h1{font-family:var(--font-serif);font-size:clamp(2.2rem,4.5vw,3.6rem);font-weigh
   color:var(--accent);border-bottom:1px solid rgba(181,134,58,.35);padding-bottom:.1rem;transition:border-color .2s
 }
 .cv-link:hover{border-color:var(--accent)}
-.expertise-zone{position:relative}
-.expertise-zone-label{
-  position:sticky;top:var(--nav-h);z-index:5;
-  background:var(--body-bg);padding:.5rem 0;
-  font-family:var(--font-mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--muted);border-bottom:1px solid var(--body-line);margin-bottom:0
-}
-.pstep h3{font-family:var(--font-serif);font-size:1.55rem;font-weight:400;color:var(--text);margin-bottom:.75rem;line-height:1.2}
-.pstep .exp-desc{font-size:.88rem;color:var(--muted);line-height:1.9;max-width:46ch}
 /* Right sticky panel */
 .ps-right{position:sticky;top:var(--nav-h);height:calc(100vh - var(--nav-h));padding:0}
 .ps-sticky{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
@@ -156,16 +152,7 @@ h1{font-family:var(--font-serif);font-size:clamp(2.2rem,4.5vw,3.6rem);font-weigh
   background:linear-gradient(to right,var(--body-bg) 0%,transparent 100%);
   pointer-events:none;z-index:1;
 }
-
-/* Expertise images: fill panel, grayscale, left fade like profile photo */
-#pv-trade img,#pv-comp img,#pv-ecom img{
-  position:absolute;inset:0;
-  width:100%!important;height:100%!important;
-  object-fit:cover;object-position:center;
-  max-width:none!important;border-radius:0;box-shadow:none;
-  filter:grayscale(1);
-}
-#pv-photo::after,#pv-logos::after,#pv-trade,#pv-comp,#pv-ecom{position:absolute}
+#pv-photo::after,#pv-logos::after{position:absolute}
 
 /* ════════════════════════════════════ SERVICES */
 #services{background-color:var(--body-bg3);padding:5rem 0;border-top:1px solid var(--body-line);border-bottom:1px solid var(--body-line)}
@@ -189,6 +176,67 @@ h1{font-family:var(--font-serif);font-size:clamp(2.2rem,4.5vw,3.6rem);font-weigh
   background:var(--accent);flex-shrink:0;
 }
 .svc-card ul li strong{color:var(--text);font-weight:500}
+
+/* ════════════════════════════════════ AREAS OF EXPERTISE */
+#expertise{background-color:var(--body-bg);border-top:1px solid var(--body-line);border-bottom:1px solid var(--body-line)}
+#expertise .label{text-align:center}
+.exp-label-row{text-align:center;padding-top:4rem;position:relative;z-index:2}
+.exp-scrolly{
+  display:grid;grid-template-columns:2fr 3fr;
+  align-items:stretch;width:100%;position:relative;z-index:2;
+}
+/* Left column spans the full grid height — its right border is the hard divider */
+.exp-left{position:relative;border-right:1px solid var(--body-line)}
+/* Inner wrapper is sticky so all 3 text blocks stay visible while images scroll */
+.exp-left-inner{
+  position:sticky;top:var(--nav-h);
+  height:calc(100vh - var(--nav-h));
+  display:flex;flex-direction:column;justify-content:center;gap:1.4rem;
+  padding:2rem 3rem 2rem max(2rem,calc(50vw - var(--max)/2 + 2rem));
+}
+.estep{padding:1rem 0}
+.estep h3{
+  font-family:var(--font-serif);font-size:clamp(1.25rem,1.7vw,1.55rem);
+  font-weight:400;color:#bdb8b3;margin-bottom:.55rem;line-height:1.25;
+  transition:color .85s ease-in-out
+}
+.estep p{
+  font-size:.88rem;color:#bdb8b3;line-height:1.7;max-width:46ch;
+  transition:color .85s ease-in-out
+}
+/* Active step: heading darkens to body --text, paragraph to --muted (matches About) */
+.estep.active h3{color:var(--text)}
+.estep.active p{color:var(--muted)}
+/* Right column: a sticky stage that cross-fades between three images,
+   plus invisible scroll-trigger spacers behind it that drive the active state.
+   clip-path clips the sticky stage at the column's bottom so the image
+   does not visually bleed into the About section as the section ends.
+   (overflow:hidden would break sticky by making this element a sticky scope.) */
+.exp-right{position:relative;clip-path:inset(0)}
+.ev-stage{
+  position:sticky;top:var(--nav-h);
+  width:100%;height:calc(100vh - var(--nav-h));
+  overflow:hidden;
+  /* Pull the triggers up underneath this stage so it overlays them */
+  margin-bottom:calc(-1 * (100vh - var(--nav-h)));
+  z-index:1;background:var(--body-bg);
+}
+.ev{
+  position:absolute;inset:0;
+  opacity:0;transition:opacity 1.1s ease-in-out;
+}
+.ev.active{opacity:1}
+.ev img{
+  width:100%;height:100%;
+  object-fit:cover;object-position:center;
+  max-width:none;border-radius:0;box-shadow:none;
+  filter:grayscale(1);display:block;
+}
+/* Invisible scroll-length spacers — observed by IO to drive the active step.
+   Comp and Ecom are taller so their text/image stay active longer. */
+.ev-trig{position:relative;z-index:0;width:100%;height:calc(100vh - var(--nav-h))}
+.ev-trig[data-estep="comp"]{height:calc(140vh - var(--nav-h))}
+.ev-trig[data-estep="ecom"]{height:calc(140vh - var(--nav-h))}
 
 /* ════════════════════════════════════ RECENT WORK */
 #work{background-color:var(--body-bg2);padding:5rem 0;border-bottom:1px solid var(--body-line)}
@@ -286,7 +334,7 @@ a.work-card:hover .work-card-img img{transform:scale(1.04)}
 }
 
 /* ════════════════════════════════════ CONTACT */
-#contact{background:var(--hero-bg);padding:6rem 0;position:relative;overflow:hidden;text-align:center}
+#contact{background:var(--hero-bg);padding:6rem 0;position:relative;overflow:hidden;text-align:center;min-height:100svh;display:flex;align-items:center;justify-content:center}
 .contact-inner{position:relative;z-index:2}
 #contact .label{text-align:center}
 #contact h2{font-family:var(--font-serif);color:var(--text-light);font-size:clamp(1.9rem,3.5vw,2.8rem);max-width:18ch;margin:.7rem auto .85rem;font-weight:400}
@@ -304,10 +352,18 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
   .profile-scrolly{grid-template-columns:1fr}
   .ps-right{display:none}
   .pstep{min-height:auto;opacity:1;padding:1.8rem 0}
-  .expertise-zone-label{position:static;margin-bottom:.8rem}
+  /* Expertise: text only, full color, no images */
+  .exp-scrolly{grid-template-columns:1fr}
+  .exp-left{border-right:none}
+  .exp-left-inner{position:static;height:auto;display:block;padding:1rem 2rem 2.5rem max(1.5rem,calc(50vw - var(--max)/2 + 1.5rem))}
+  .exp-right{display:none}
+  .estep h3{color:var(--text)}
+  .estep p{color:var(--muted)}
+  .estep{padding:1.8rem 0}
 }
 @media(max-width:900px){
   .ps-left{padding:2.5rem 1.5rem 3rem}
+  .exp-left-inner{padding:1rem 1.5rem 2.5rem}
   nav{padding:0 1.5rem}
 }
 @media(max-width:900px){
@@ -361,6 +417,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
   <div class="nav-links">
     <a href="#services">Services Offered</a>
     <a href="#work">Recent Work</a>
+    <a href="#expertise">Areas of Expertise</a>
     <a href="#about">About</a>
     <a href="#data-stories">Data Stories</a>
     <a href="#contact" class="nav-cta">Contact</a>
@@ -372,6 +429,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
 <div class="nav-mobile" id="nav-mobile">
   <a href="#services" class="nav-mobile-link">Services Offered</a>
   <a href="#work" class="nav-mobile-link">Recent Work</a>
+  <a href="#expertise" class="nav-mobile-link">Areas of Expertise</a>
   <a href="#about" class="nav-mobile-link">About</a>
   <a href="#data-stories" class="nav-mobile-link">Data Stories</a>
   <a href="#contact" class="nav-mobile-link">Contact</a>
@@ -592,6 +650,65 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
   </div>
 </section>
 
+<!-- ═══ AREAS OF EXPERTISE ════════════════════════════════════════════════ -->
+<section id="expertise">
+  <div class="exp-label-row container">
+    <span class="label reveal">Areas of expertise</span>
+  </div>
+  <div class="exp-scrolly">
+
+    <div class="exp-left">
+      <div class="exp-left-inner">
+
+        <div class="estep" data-evisual="trade">
+          <h3>International trade &amp; investment</h3>
+          <p>Export potential and strategies, attracting and leveraging international investment, policy priorities</p>
+        </div>
+
+        <div class="estep" data-evisual="comp">
+          <h3>Competitiveness &amp; private sector development</h3>
+          <p>Promoting SME development and exporting, productivity trends and policies, structural transformation</p>
+        </div>
+
+        <div class="estep" data-evisual="ecom">
+          <h3>E-commerce &amp; the digital economy</h3>
+          <p>Domestic and cross-border e-commerce and opportunities for SMEs, digital development priorities</p>
+        </div>
+
+      </div>
+    </div><!-- /exp-left -->
+
+    <div class="exp-right">
+
+      <!-- Sticky stage: cross-fades between the three images -->
+      <div class="ev-stage">
+        <div class="ev active" data-estep="trade">
+          <img src="expertise-trade.jpg.jpg"
+               onerror="this.onerror=null;this.src='https://www.derekcarnegie.com/-_-/res/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/images/files/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/a7661267-f90e-40e6-bc3a-f0da1fe4c244/256-192/43aeb5c8cf11a5c41c4122fd5b45319617edda11'"
+               alt="International trade &amp; investment" />
+        </div>
+        <div class="ev" data-estep="comp">
+          <img src="expertise-comp.jpg.jpg"
+               onerror="this.onerror=null;this.src='https://www.derekcarnegie.com/-_-/res/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/images/files/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/1bc10c34-0868-4243-a234-0c7ca4f4b629/256-192/bbbbdf1b2fa3958044f1f4db2dfc869a966482dd'"
+               alt="Competitiveness" />
+        </div>
+        <div class="ev" data-estep="ecom">
+          <img src="expertise-ecom.jpg.jpg"
+               onerror="this.onerror=null;this.src='https://www.derekcarnegie.com/-_-/res/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/images/files/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/8eae96d2-597e-4449-b6f6-812fcb567400/256-192/e43798ca78f3dc30ceabc77dbd2ea8b0b7ea633a'"
+               alt="E-commerce" />
+        </div>
+      </div>
+
+      <!-- Invisible scroll-length triggers behind the stage -->
+      <div class="ev-trig" data-estep="trade"></div>
+      <div class="ev-trig" data-estep="comp"></div>
+      <div class="ev-trig" data-estep="ecom"></div>
+
+    </div>
+
+  </div>
+</section>
+
 <!-- ═══ ABOUT ══════════════════════════════════════════════════════════════ -->
 <section id="about">
   <div class="profile-label-row container">
@@ -622,26 +739,6 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
         <p><a href="derek-carnegie-cv.pdf" target="_blank" class="cv-link">Curriculum vitae <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 6h8M6 2l4 4-4 4"/></svg></a></p>
       </div>
 
-      <!-- Expertise steps -->
-      <div class="expertise-zone">
-        <div class="expertise-zone-label">Areas of expertise</div>
-
-        <div class="pstep" data-visual="trade">
-          <h3>International trade &amp; investment</h3>
-          <p class="exp-desc">Export potential and strategies, attracting and leveraging international investment, policy priorities</p>
-        </div>
-
-        <div class="pstep" data-visual="comp">
-          <h3>Competitiveness &amp; private sector development</h3>
-          <p class="exp-desc">Promoting SME development and exporting, productivity trends and policies, structural transformation</p>
-        </div>
-
-        <div class="pstep" data-visual="ecom">
-          <h3>E-commerce &amp; the digital economy</h3>
-          <p class="exp-desc">Domestic and cross-border e-commerce and opportunities for SMEs, digital development priorities</p>
-        </div>
-      </div>
-
     </div><!-- /ps-left -->
 
     <div class="ps-right">
@@ -659,24 +756,6 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
                src="derek-profile-new.jpg"
                onerror="this.onerror=null;this.src='https://www.derekcarnegie.com/-_-/res/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/images/files/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/96d20198-fa46-48f7-8d61-6402de71aac1/768-1121/200355fea7ea77f17497c862c63edc7f2b563a4c'"
                alt="Derek Carnegie" />
-        </div>
-
-        <div class="pv" id="pv-trade">
-          <img src="expertise-trade.jpg.jpg"
-               onerror="this.onerror=null;this.src='https://www.derekcarnegie.com/-_-/res/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/images/files/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/a7661267-f90e-40e6-bc3a-f0da1fe4c244/256-192/43aeb5c8cf11a5c41c4122fd5b45319617edda11'"
-               alt="International trade &amp; investment" />
-        </div>
-
-        <div class="pv" id="pv-comp">
-          <img src="expertise-comp.jpg.jpg"
-               onerror="this.onerror=null;this.src='https://www.derekcarnegie.com/-_-/res/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/images/files/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/1bc10c34-0868-4243-a234-0c7ca4f4b629/256-192/bbbbdf1b2fa3958044f1f4db2dfc869a966482dd'"
-               alt="Competitiveness" />
-        </div>
-
-        <div class="pv" id="pv-ecom">
-          <img src="expertise-ecom.jpg.jpg"
-               onerror="this.onerror=null;this.src='https://www.derekcarnegie.com/-_-/res/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/images/files/1e85b3bb-4afa-49ef-a2f8-f2e98ea8d849/8eae96d2-597e-4449-b6f6-812fcb567400/256-192/e43798ca78f3dc30ceabc77dbd2ea8b0b7ea633a'"
-               alt="E-commerce" />
         </div>
 
       </div>
@@ -917,13 +996,7 @@ document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
 
 // ── About / Profile scrollytelling ────────────────────────────────────────
 const psteps = document.querySelectorAll('.pstep');
-const pvMap  = {
-  photo: 'pv-photo',
-  logos: 'pv-logos',
-  trade: 'pv-trade',
-  comp:  'pv-comp',
-  ecom:  'pv-ecom'
-};
+const pvMap  = { photo: 'pv-photo', logos: 'pv-logos' };
 
 function activateStep(step) {
   psteps.forEach(s => s.classList.remove('active'));
@@ -940,6 +1013,26 @@ const profObs = new IntersectionObserver(entries => {
   if (best) activateStep(best);
 }, { threshold: [0.3, 0.5, 0.7], rootMargin: '-15% 0px -15% 0px' });
 psteps.forEach(s => profObs.observe(s));
+
+// ── Areas of Expertise scrollytelling (cross-fade variant) ────────────────
+// Watch the invisible scroll-length triggers behind the sticky stage —
+// whichever is most in view drives both the active text and the active image.
+const esteps  = document.querySelectorAll('.estep');
+const evs     = document.querySelectorAll('.ev');
+const evTrigs = document.querySelectorAll('.ev-trig');
+
+function activateEKey(key) {
+  esteps.forEach(s => s.classList.toggle('active', s.dataset.evisual === key));
+  evs.forEach(v    => v.classList.toggle('active', v.dataset.estep   === key));
+}
+if (esteps.length) activateEKey(esteps[0].dataset.evisual);
+
+const expObs = new IntersectionObserver(entries => {
+  let best = null, bestR = 0;
+  entries.forEach(e => { if (e.intersectionRatio > bestR) { bestR = e.intersectionRatio; best = e.target; }});
+  if (best) activateEKey(best.dataset.estep);
+}, { threshold: [0.3, 0.5, 0.7], rootMargin: '-15% 0px -15% 0px' });
+evTrigs.forEach(t => expObs.observe(t));
 
 // ── Infinite carousel ─────────────────────────────────────────────────────
 const track   = document.getElementById('carousel-track');
