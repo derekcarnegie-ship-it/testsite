@@ -321,7 +321,10 @@ a.work-card{
   display:flex;flex-direction:column;color:inherit;text-decoration:none;
 }
 a.work-card:hover{border-color:rgba(181,134,58,.4);transform:translateY(-4px);box-shadow:0 10px 26px rgba(0,0,0,.08)}
-.work-card-img{aspect-ratio:1/1;overflow:hidden;flex-shrink:0;background:var(--body-bg3)}
+/* min-height is a defensive fallback so the thumbnail box is never collapsed
+   even on engines that briefly fail to compute aspect-ratio (does not affect
+   desktop, which always exceeds this fallback via aspect-ratio:1/1). */
+.work-card-img{aspect-ratio:1/1;min-height:160px;overflow:hidden;flex-shrink:0;background:var(--body-bg3)}
 .work-card-img img{width:100%;height:100%;object-fit:cover;object-position:top center;transition:transform .4s}
 a.work-card:hover .work-card-img img{transform:scale(1.04)}
 .work-card-body{padding:.8rem 1rem .95rem;display:flex;flex-direction:column;flex:1}
@@ -335,6 +338,31 @@ a.work-card:hover .work-card-img img{transform:scale(1.04)}
 #data-stories{background-color:var(--body-bg2);padding:5rem 0;border-bottom:1px solid var(--body-line)}
 #data-stories .label{text-align:center}
 .stories-subtitle{font-size:.76rem;color:var(--muted);font-style:italic;margin-top:.2rem;text-align:center;margin-bottom:0}
+/* Stories carousel: one large thumbnail at a time, auto-advances every 3s */
+.stories-carousel{position:relative;margin-top:1.8rem;border-radius:6px}
+.stories-viewport{overflow:hidden;background:#fff}
+.stories-track{display:flex;gap:0;transition:transform .6s cubic-bezier(.4,.0,.2,1);will-change:transform}
+/* Slide is the full-width carousel cell; the IMG inside is sized to its
+   natural aspect (height fills, width auto) so the rounded corners visibly
+   cut into the actual image content rather than into white letterboxing. */
+.stories-slide{flex:0 0 100%;height:346px;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center}
+.stories-slide img{max-width:100%;height:100%;width:auto;display:block;border-radius:7px;transition:transform .4s}
+.stories-slide:hover img{transform:scale(1.02)}
+.stories-slide:focus{outline:none}
+.stories-slide:focus-visible img{outline:2px solid rgba(181,134,58,.6);outline-offset:2px}
+.stories-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:42px;height:42px;border-radius:50%;
+  background:rgba(20,20,20,.28);color:#fff;border:none;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  opacity:.55;transition:background .25s,opacity .25s,transform .25s;
+  z-index:5;padding:0;
+}
+.stories-arrow:hover{background:rgba(20,20,20,.6);opacity:1}
+.stories-arrow:focus-visible{outline:2px solid rgba(181,134,58,.7);outline-offset:2px}
+.stories-prev{left:14px}
+.stories-next{right:14px}
+.stories-carousel:hover .stories-arrow{opacity:.85}
 /* 3-col grid: column widths match each image's natural aspect ratio */
 /* trade square 1.0 : emissions landscape 1100/680=1.618 : poverty portrait 675/1118=0.604 */
 /* At ~1100px container 1fr≈330px → trade=330px, emissions=534px, poverty=200px */
@@ -384,7 +412,7 @@ a.work-card:hover .work-card-img img{transform:scale(1.04)}
   position:relative;overflow:hidden;border-radius:4px;display:none;flex-shrink:0;
 }
 #lb-img{
-  display:none;max-width:92vw;max-height:88vh;border-radius:4px;
+  display:none;max-width:92vw;max-height:88vh;border-radius:10px;
   object-fit:contain;cursor:zoom-in;transition:transform .25s ease;
   transform-origin:center center;flex-shrink:0;
 }
@@ -437,6 +465,10 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
   .blog-grid .blog-card:nth-child(3) .blog-img img{transform:none}
   .blog-grid .blog-card:nth-child(1):hover .blog-img img,
   .blog-grid .blog-card:nth-child(3):hover .blog-img img{transform:scale(1.03)}
+  /* Stories carousel: shrink thumbnail height for tablet/mobile */
+  .stories-slide{height:213px}
+  .stories-slide img{border-radius:5px}
+  .stories-arrow{width:36px;height:36px}
 }
 @media(max-width:768px){
   .work-header,.blog-grid{margin-bottom:1.4rem}
@@ -829,38 +861,41 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
   <div class="container">
     <span class="label reveal">Data stories</span>
     <p class="stories-subtitle reveal d1">Data visualisations based on current projects and news</p>
-    <div class="blog-grid">
+    <div class="stories-carousel reveal" aria-roledescription="carousel" aria-label="Data stories">
+      <button class="stories-arrow stories-prev" type="button" aria-label="Previous data story">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
 
-      <!-- Agricultural trade by country income — square, col 1 -->
-      <article class="blog-card reveal"
-               onclick="openLightbox('trade_tariff_infographic_v6.html','trade')"
-               role="button" tabindex="0"
-               aria-label="Open Agricultural trade by country income visualisation">
-        <div class="blog-img" style="background:#000">
-          <img src="thumb_trade.jpg" alt="Agricultural trade by country income radial chart">
+      <div class="stories-viewport">
+        <div class="stories-track">
+
+          <article class="stories-slide"
+                   onclick="openLightbox('trade_tariff_infographic_v6.html','trade')"
+                   role="button" tabindex="0"
+                   aria-label="Open Agricultural trade by country income visualisation">
+            <img src="thumb_trade.jpg" alt="Agricultural trade by country income radial chart">
+          </article>
+
+          <article class="stories-slide"
+                   onclick="openLightbox('carbon_emissions_gdp_v4.html','emissions')"
+                   role="button" tabindex="0"
+                   aria-label="Open Global income and emissions visualisation">
+            <img src="thumb_emissions.jpg" alt="Global income and emissions scatter plot">
+          </article>
+
+          <article class="stories-slide"
+                   onclick="openLightbox('poverty_lightbox_v2.jpg')"
+                   role="button" tabindex="0"
+                   aria-label="Open Declining global poverty visualisation">
+            <img src="thumb_poverty_v2.jpg" alt="Declining global poverty bubble chart">
+          </article>
+
         </div>
-      </article>
+      </div>
 
-      <!-- Global income and emissions — landscape, col 2 -->
-      <article class="blog-card reveal d1"
-               onclick="openLightbox('carbon_emissions_gdp_v4.html','emissions')"
-               role="button" tabindex="0"
-               aria-label="Open Global income and emissions visualisation">
-        <div class="blog-img" style="background:#e8e3dd">
-          <img src="thumb_emissions.jpg" alt="Global income and emissions scatter plot">
-        </div>
-      </article>
-
-      <!-- Declining global poverty — portrait, col 3 -->
-      <article class="blog-card reveal d2"
-               onclick="openLightbox('poverty_lightbox.jpg')"
-               role="button" tabindex="0"
-               aria-label="Open Declining global poverty visualisation">
-        <div class="blog-img" style="background:#fff">
-          <img src="thumb_poverty.jpg" alt="Declining global poverty bubble chart">
-        </div>
-      </article>
-
+      <button class="stories-arrow stories-next" type="button" aria-label="Next data story">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
   </div>
 </section>
@@ -905,8 +940,8 @@ let bgDarkRects = [];
   document.body.insertBefore(cvs, document.body.firstChild);
   const ctx = cvs.getContext('2d');
 
-  const N      = 25;
-  const NDOTS  = 300;
+  const N      = 38;
+  const NDOTS  = 450;
   const MINSEP = 4;
   const NAV_H  = 62;
   const N_PATHS = 14;
@@ -1176,11 +1211,16 @@ track.addEventListener('touchend', e => {
   }
 }, { passive: true });
 
-// ── Hide carousel image boxes when CDN images fail to load ────────────────
+// ── Carousel images: only hide a thumbnail box on a real error event.
+//    The previous "complete && !naturalWidth" precheck could misfire on
+//    slow mobile networks (especially against the cloned cards), hiding
+//    images that were still legitimately mid-load. We now wait for an
+//    actual `error` to fire before hiding.
 document.querySelectorAll('.work-card-img img').forEach(img => {
-  const hide = () => { const w = img.closest('.work-card-img'); if (w) w.style.display = 'none'; };
-  if (img.complete) { if (!img.naturalWidth) hide(); }
-  else { img.addEventListener('error', hide); }
+  img.addEventListener('error', () => {
+    const w = img.closest('.work-card-img');
+    if (w) w.style.display = 'none';
+  });
 });
 
 // ── Lightbox ──────────────────────────────────────────────────────────────
@@ -1273,7 +1313,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 // Keyboard activation for data story cards
-document.querySelectorAll('.blog-card[role="button"]').forEach(card => {
+document.querySelectorAll('.blog-card[role="button"], .stories-slide[role="button"]').forEach(card => {
   card.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -1281,6 +1321,99 @@ document.querySelectorAll('.blog-card[role="button"]').forEach(card => {
     }
   });
 });
+
+// ── Data stories carousel: seamless infinite loop via cloned end-slides.
+//    Auto-advance every 3s, manual prev/next, pause on hover/focus/hidden tab.
+(function () {
+  const carousel = document.querySelector('.stories-carousel');
+  if (!carousel) return;
+  const track  = carousel.querySelector('.stories-track');
+  const slides = Array.from(carousel.querySelectorAll('.stories-slide'));
+  const prev   = carousel.querySelector('.stories-prev');
+  const next   = carousel.querySelector('.stories-next');
+  if (!track || !slides.length || !prev || !next) return;
+
+  const TOTAL = slides.length;
+  const INTERVAL = 3000;
+  const TRANSITION = 'transform .6s cubic-bezier(.4,.0,.2,1)';
+
+  // Clone first and last for seamless wrap
+  const firstClone = slides[0].cloneNode(true);
+  const lastClone  = slides[TOTAL - 1].cloneNode(true);
+  [firstClone, lastClone].forEach(c => {
+    c.setAttribute('aria-hidden', 'true');
+    c.setAttribute('tabindex', '-1');
+    c.removeAttribute('onclick');
+    c.removeAttribute('role');
+  });
+  track.appendChild(firstClone);
+  track.insertBefore(lastClone, slides[0]);
+
+  // Visual layout: [lastClone, slide0, slide1, ..., slideN-1, firstClone]
+  // Visible idx 1..TOTAL = real slides; 0 and TOTAL+1 are clones.
+  let visIdx = 1;
+  let timer = null;
+  let animating = false;
+
+  function setTransform(noAnim) {
+    if (noAnim) {
+      track.style.transition = 'none';
+      track.style.transform = 'translateX(-' + (visIdx * 100) + '%)';
+      // force reflow so next style change re-enables transition cleanly
+      void track.offsetWidth;
+      track.style.transition = TRANSITION;
+    } else {
+      track.style.transition = TRANSITION;
+      track.style.transform = 'translateX(-' + (visIdx * 100) + '%)';
+    }
+  }
+
+  // Initial position (no animation)
+  setTransform(true);
+
+  function go(delta) {
+    if (animating) return;
+    animating = true;
+    visIdx += delta;
+    setTransform(false);
+  }
+
+  track.addEventListener('transitionend', e => {
+    if (e.propertyName !== 'transform') return;
+    animating = false;
+    if (visIdx === 0) {
+      // landed on lastClone → snap to real last slide
+      visIdx = TOTAL;
+      setTransform(true);
+    } else if (visIdx === TOTAL + 1) {
+      // landed on firstClone → snap to real first slide
+      visIdx = 1;
+      setTransform(true);
+    }
+  });
+
+  function start() {
+    stop();
+    timer = setInterval(() => go(1), INTERVAL);
+  }
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+  }
+
+  next.addEventListener('click', e => { e.stopPropagation(); go(1);  start(); });
+  prev.addEventListener('click', e => { e.stopPropagation(); go(-1); start(); });
+
+  carousel.addEventListener('mouseenter', stop);
+  carousel.addEventListener('mouseleave', start);
+  carousel.addEventListener('focusin',  stop);
+  carousel.addEventListener('focusout', start);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stop(); else start();
+  });
+
+  start();
+}());
 
 // ── Data stories grid: sync row height to trade column width so every cell
 //    matches its image's natural aspect ratio at any viewport width.
