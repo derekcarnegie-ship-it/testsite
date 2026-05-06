@@ -870,6 +870,13 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
         <div class="stories-track">
 
           <article class="stories-slide"
+                   onclick="openLightbox('themes_stacked_area_v2.mp4','video')"
+                   role="button" tabindex="0"
+                   aria-label="Open BIS speech themes stacked area chart visualisation">
+            <img src="thumb_themes.jpg" alt="BIS speech themes stacked area chart">
+          </article>
+
+          <article class="stories-slide"
                    onclick="openLightbox('trade_tariff_infographic_v6.html','trade')"
                    role="button" tabindex="0"
                    aria-label="Open Agricultural trade by country income visualisation">
@@ -907,6 +914,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
     <iframe id="lb-frame" src="" title="Data visualisation" style="border:none;display:block;background:#000"></iframe>
   </div>
   <img id="lb-img" src="" alt="Data visualisation">
+  <video id="lb-video" src="" controls autoplay loop style="display:none;max-width:92vw;max-height:88vh;border-radius:4px;background:#000"></video>
 </div>
 
 <!-- ═══ CONTACT ════════════════════════════════════════════════════════════ -->
@@ -1228,15 +1236,26 @@ const lbOverlay   = document.getElementById('lb-overlay');
 const lbFrameWrap = document.getElementById('lb-frame-wrap');
 const lbFrame     = document.getElementById('lb-frame');
 const lbImg       = document.getElementById('lb-img');
+const lbVideo     = document.getElementById('lb-video');
 const lbClose     = document.getElementById('lb-close');
 
 function openLightbox(src, type) {
   const isImage = /\.(jpe?g|png|gif|webp|svg)$/i.test(src);
+  const isVideo = type === 'video' || /\.mp4$/i.test(src);
   if (isImage) {
     lbImg.src = src;
     lbImg.style.display = 'block';
     lbImg.classList.remove('zoomed');
     lbImg.style.transformOrigin = '';
+    lbFrameWrap.style.display = 'none';
+    lbFrame.src = '';
+    lbVideo.style.display = 'none';
+    lbVideo.src = '';
+  } else if (isVideo) {
+    lbVideo.src = src;
+    lbVideo.style.display = 'block';
+    lbImg.style.display = 'none';
+    lbImg.src = '';
     lbFrameWrap.style.display = 'none';
     lbFrame.src = '';
   } else {
@@ -1284,6 +1303,9 @@ function closeLightbox() {
   lbImg.style.display = 'none';
   lbImg.classList.remove('zoomed');
   lbImg.style.transformOrigin = '';
+  lbVideo.pause();
+  lbVideo.src = '';
+  lbVideo.style.display = 'none';
   document.body.style.overflow = '';
 }
 
