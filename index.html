@@ -1431,10 +1431,13 @@ document.querySelectorAll('.blog-card[role="button"], .stories-slide[role="butto
   carousel.addEventListener('focusout', start);
 
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stop(); else start();
+    if (document.hidden) stop();
   });
 
-  start();
+  const visibilityObs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) start(); else stop(); });
+  }, { threshold: 0.2 });
+  visibilityObs.observe(carousel);
 }());
 
 // ── Data stories grid: sync row height to trade column width so every cell
