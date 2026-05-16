@@ -197,22 +197,18 @@ h1{font-family:var(--font-serif);font-size:clamp(2.2rem,4.5vw,3.6rem);font-weigh
 .pv{position:absolute;inset:0;opacity:0;transition:opacity 1.1s ease-in-out;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .pv.active{opacity:1;pointer-events:auto}
 
-/* Profile photo: full image visible, right-aligned; gradient covers empty left space */
+/* Profile photo: full image visible, right-aligned; mask fades left edge of photo */
 .pv-photo-cover{
   position:absolute;inset:12% 0;
   width:100%;height:76%;
   object-fit:contain;object-position:right center;
   background-color:var(--body-bg);
   max-width:none;border-radius:0;box-shadow:none;
+  -webkit-mask-image:linear-gradient(to right,transparent 0%,transparent 48%,black 70%);
+  mask-image:linear-gradient(to right,transparent 0%,transparent 48%,black 70%);
 }
-/* Gradient blends left edge of photo/image into the text column */
-#pv-photo::after,#pv-logos::after{
-  content:'';position:absolute;top:0;left:0;bottom:0;
-  width:58%;
-  background:linear-gradient(to right,var(--body-bg) 0%,transparent 100%);
-  pointer-events:none;z-index:1;
-}
-#pv-photo::after,#pv-logos::after{position:absolute}
+/* Panel overlay removed — mask on image handles the fade */
+#pv-photo::after,#pv-logos::after{display:none}
 
 /* ════════════════════════════════════ SERVICES */
 #services{background-color:var(--body-bg3);padding:5rem 0;border-top:1px solid var(--body-line);border-bottom:1px solid var(--body-line)}
