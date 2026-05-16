@@ -197,11 +197,11 @@ h1{font-family:var(--font-serif);font-size:clamp(2.2rem,4.5vw,3.6rem);font-weigh
 .pv{position:absolute;inset:0;opacity:0;transition:opacity 1.1s ease-in-out;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .pv.active{opacity:1;pointer-events:auto}
 
-/* Profile photo: cover fills the full panel, cropping from bottom */
+/* Profile photo: contained within the panel, beige fills remaining space */
 .pv-photo-cover{
   position:absolute;inset:0;
   width:100%;height:100%;
-  object-fit:cover;object-position:center top;
+  object-fit:contain;object-position:center center;
   background-color:var(--body-bg);
   max-width:none;border-radius:0;box-shadow:none;
 }
