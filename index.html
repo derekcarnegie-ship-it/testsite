@@ -205,10 +205,10 @@ h1{font-family:var(--font-serif);font-size:clamp(2.2rem,4.5vw,3.6rem);font-weigh
   background-color:var(--body-bg);
   max-width:none;border-radius:0;box-shadow:none;
 }
-/* Overlay: solid background at left edge, fading to transparent by 22% */
+/* Overlay: solid background covers empty left area, fades to transparent 22pts after photo starts */
 #pv-photo::after,#pv-logos::after{
   content:'';position:absolute;top:0;left:0;bottom:0;width:100%;
-  background:linear-gradient(to right,var(--body-bg) 0%,transparent 22%);
+  background:linear-gradient(to right,var(--body-bg) 0%,var(--body-bg) 50%,transparent 72%);
   pointer-events:none;z-index:1;
 }
 
