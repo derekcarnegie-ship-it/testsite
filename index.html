@@ -343,8 +343,15 @@ a.work-card:hover .work-card-img img{transform:scale(1.04)}
 /* Slide is the full-width carousel cell; the IMG inside is sized to its
    natural aspect (height fills, width auto) so the rounded corners visibly
    cut into the actual image content rather than into white letterboxing. */
-.stories-slide{flex:0 0 100%;height:346px;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center}
-.stories-slide img{max-width:100%;height:100%;width:auto;display:block;border-radius:7px;transition:transform .4s}
+.stories-slide{flex:0 0 100%;height:380px;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;gap:2.2rem;padding:0 4.2rem}
+/* Image takes whatever width the text column leaves; max-* keeps aspect without letterboxing */
+.stories-media{flex:0 1 auto;min-width:0;height:100%;display:flex;align-items:center;justify-content:center}
+.stories-slide img{max-width:100%;max-height:100%;width:auto;height:auto;display:block;border-radius:7px;transition:transform .4s}
+.stories-text{flex:0 0 340px;max-height:100%;overflow:hidden;text-align:left;color:var(--text)}
+.stories-text h3,#lb-text h3{font-family:var(--font-serif);font-weight:400;font-size:1.3rem;line-height:1.25;margin-bottom:.3rem}
+.stories-date,#lb-text .stories-date{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+.stories-text p{font-size:.8rem;line-height:1.6;color:var(--muted);margin-bottom:.55rem}
+.stories-text p:last-child{margin-bottom:0}
 .stories-slide:hover img{transform:scale(1.02)}
 .stories-slide:focus{outline:none}
 .stories-slide:focus-visible img{outline:2px solid rgba(181,134,58,.6);outline-offset:2px}
@@ -415,6 +422,22 @@ a.work-card:hover .work-card-img img{transform:scale(1.04)}
   transform-origin:center center;flex-shrink:0;
 }
 #lb-img.zoomed{transform:scale(2.5);cursor:zoom-out}
+/* Story text column to the right of the visual */
+#lb-overlay{--lb-text-w:340px;gap:2.2rem}
+#lb-text{display:none;width:var(--lb-text-w);flex-shrink:0;max-height:88vh;overflow-y:auto;color:var(--text-light);text-align:left;padding-right:.4rem}
+#lb-overlay.lb-has-text #lb-text{display:block}
+#lb-overlay.lb-has-text #lb-img,
+#lb-overlay.lb-has-text #lb-video{max-width:calc(92vw - var(--lb-text-w) - 2.2rem)}
+#lb-overlay.lb-panning #lb-text{display:none}
+#lb-text h3{color:var(--text-light);font-size:1.5rem}
+#lb-text p{font-size:.88rem;line-height:1.7;color:#cfcac3;margin-bottom:.8rem}
+#lb-text p:last-child{margin-bottom:0}
+@media(max-width:900px){
+  #lb-overlay.open{flex-direction:column;justify-content:flex-start;overflow-y:auto;padding:3.5rem 1rem 2rem;gap:1.4rem}
+  #lb-overlay.lb-has-text #lb-img,
+  #lb-overlay.lb-has-text #lb-video{max-width:92vw;max-height:70vh}
+  #lb-text{width:100%;max-width:600px;max-height:none;overflow:visible;padding-right:0}
+}
 @media(max-width:600px){
   #lb-close{top:.6rem;right:.8rem}
 }
@@ -464,9 +487,14 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
   .blog-grid .blog-card:nth-child(1):hover .blog-img img,
   .blog-grid .blog-card:nth-child(3):hover .blog-img img{transform:scale(1.03)}
   /* Stories carousel: shrink thumbnail height for tablet/mobile */
-  .stories-slide{height:213px}
+  .stories-slide{height:auto;flex-direction:column;gap:1rem;padding:0 0 1rem}
+  .stories-media{height:213px;width:100%}
   .stories-slide img{border-radius:5px}
-  .stories-arrow{width:36px;height:36px}
+  /* Mobile: title, date and a clamped first paragraph; full text in the lightbox */
+  .stories-text{flex:none;width:100%;max-width:560px;padding:0 1rem}
+  .stories-text p:not(.stories-date){display:none}
+  .stories-text p.stories-date + p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:0}
+  .stories-arrow{width:36px;height:36px;top:106px}
 }
 @media(max-width:768px){
   .work-header,.blog-grid{margin-bottom:1.4rem}
@@ -530,7 +558,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
   <div class="hero-inner">
     <div class="hero-kicker reveal">Independent Economic Consultant · Geneva</div>
     <h1 class="reveal d1">Reliable analysis.<br class="h1-break"> Engaging results.<br class="h1-break"> Real impact.</h1>
-    <p class="hero-sub reveal d2">Consultant with 15 years of experience in trade and development, data analysis, and economic policy. Available to lead your next project from research design to expert drafting and data visualisation.</p>
+    <p class="hero-sub reveal d2">Consultant with 15 years of experience in trade and development, data analysis, and economic policy. Ready to lead your next project from research design to expert drafting and data visualisation.</p>
   </div>
 </section>
 
@@ -868,45 +896,82 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
         <div class="stories-track">
 
           <article class="stories-slide"
-                   onclick="openLightbox('tariff_lightbox_v1.jpg')"
+                   onclick="openLightbox('tariff_lightbox_v1.jpg',null,this)"
                    role="button" tabindex="0"
                    aria-label="Open US tariff announcements in 2025 visualisation">
-            <img src="thumb_tariff.jpg" alt="Timeline of US tariff announcements in 2025">
+            <div class="stories-media"><img src="thumb_tariff.jpg" alt="Timeline of US tariff announcements in 2025"></div>
+            <div class="stories-text">
+              <h3>U.S. tariff announcements</h3>
+              <p class="stories-date">6 October 2026</p>
+              <p>Could confusing policies be as damaging as bad ones?</p>
+              <p>That question was on my mind after reading a new study by Manova, Novy, Sampson, and Tang on the impact of last year&rsquo;s US tariffs on trade. The country&rsquo;s tariffs were adjusted 41 times in 2025. The study&rsquo;s authors found that confusion about these changes cut US imports by about as much as the tariffs themselves. Take Chinese shoes. Over just 40 days, additional duties on these imports went from 20% to 30%, then 54%, 104%, 145%, and back to 30%.</p>
+              <p>Apparently customised goods and stronger trust offset some of the negative effects of confusion. Relationships matter most in uncertainty.</p>
+            </div>
           </article>
 
           <article class="stories-slide"
-                   onclick="openLightbox('poverty_lightbox_v4.jpg')"
+                   onclick="openLightbox('poverty_lightbox_v4.jpg',null,this)"
                    role="button" tabindex="0"
                    aria-label="Open Upper bounds to global poverty visualisation">
-            <img src="thumb_poverty_v4.jpg" alt="Upper bounds to global poverty radial chart">
+            <div class="stories-media"><img src="thumb_poverty_v4.jpg" alt="Upper bounds to global poverty radial chart"></div>
+            <div class="stories-text">
+              <h3>Upper bounds to global poverty</h3>
+              <p class="stories-date">8 September 2026</p>
+              <p>There&rsquo;s a big difference between escaping poverty and reaching some level of security.</p>
+              <p>While updating a class on measuring poverty and inequality, I came across a recent paper by Pritchett &amp; Viarengo that makes the case for an upper bound to global poverty set at least ten times above the lower bound (currently $3/day). The chart below shows both lines for countries with available data. Billions of people live between the two bounds &ndash; not living in extreme poverty, but not fully free of it either.</p>
+              <p>It&rsquo;s a useful reminder of how our definitions shape what we see.</p>
+            </div>
           </article>
 
           <article class="stories-slide"
-                   onclick="openLightbox('themes_stacked_area_v2.mp4','video')"
+                   onclick="openLightbox('themes_stacked_area_v2.mp4','video',this)"
                    role="button" tabindex="0"
                    aria-label="Open BIS speech themes stacked area chart visualisation">
-            <img src="thumb_themes.jpg" alt="BIS speech themes stacked area chart">
+            <div class="stories-media"><img src="thumb_themes.jpg" alt="BIS speech themes stacked area chart"></div>
+            <div class="stories-text">
+              <h3>What&rsquo;s worrying central bankers</h3>
+              <p class="stories-date">11 May 2026</p>
+              <p>War, trade, and crypto. Apparently that&rsquo;s what has been keeping central bankers up at night.</p>
+              <p>They appear to have declining interest in health (understandable, as the pandemic faded) and climate change (less understandable, to say the least). And they may be the only people without much to say about AI &ndash; for now, anyway.</p>
+              <p>While all these topics are mostly outside of the scope of traditional monetary policy, central bankers&rsquo; words move markets by signaling priorities and policy decisions. For all their influence, they face the same uncertainties as the rest of us. What topics are likely to be the focus of their speeches in 2026?</p>
+            </div>
           </article>
 
           <article class="stories-slide"
-                   onclick="openLightbox('trade_tariff_infographic_v6.html','trade')"
+                   onclick="openLightbox('trade_tariff_infographic_v6.html','trade',this)"
                    role="button" tabindex="0"
                    aria-label="Open Agricultural trade by country income visualisation">
-            <img src="thumb_trade.jpg" alt="Agricultural trade by country income radial chart">
+            <div class="stories-media"><img src="thumb_trade.jpg" alt="Agricultural trade by country income radial chart"></div>
+            <div class="stories-text">
+              <h3>U.S. tariffs</h3>
+              <p class="stories-date">26 March 2026</p>
+              <p>A number of countries&rsquo; exports showed resilience to U.S. tariffs over the past year, thanks to high demand for particular products, closely integrated supply chains, and displacing other producers. New data in the coming months will show the impact of the end of IEEPA tariffs in February.</p>
+            </div>
           </article>
 
           <article class="stories-slide"
-                   onclick="openLightbox('carbon_emissions_gdp_v4.html','emissions')"
+                   onclick="openLightbox('carbon_emissions_gdp_v4.html','emissions',this)"
                    role="button" tabindex="0"
                    aria-label="Open Global income and emissions visualisation">
-            <img src="thumb_emissions.jpg" alt="Global income and emissions scatter plot">
+            <div class="stories-media"><img src="thumb_emissions.jpg" alt="Global income and emissions scatter plot"></div>
+            <div class="stories-text">
+              <h3>Income &amp; emissions</h3>
+              <p class="stories-date">16 March 2026</p>
+              <p>Per capita greenhouse gas emissions are increasing, though not as fast as income. A number of richer economies are growing while cutting emissions per person. However, the average person in a high income country still emits nearly 9 times more than one in a low income country. Other sources suggest this disparity may be even greater.</p>
+            </div>
           </article>
 
           <article class="stories-slide"
-                   onclick="openLightbox('poverty_lightbox_v2.jpg')"
+                   onclick="openLightbox('poverty_lightbox_v2.jpg',null,this)"
                    role="button" tabindex="0"
                    aria-label="Open Declining global poverty visualisation">
-            <img src="thumb_poverty_v2.jpg" alt="Declining global poverty bubble chart">
+            <div class="stories-media"><img src="thumb_poverty_v2.jpg" alt="Declining global poverty bubble chart"></div>
+            <div class="stories-text">
+              <h3>Declining global poverty</h3>
+              <p class="stories-date">12 February 2026</p>
+              <p>The fall in global poverty since the beginning of the century has been impressive. Using the new international poverty line ($3/day), the number of people in extreme poverty has more than halved since 2000.</p>
+              <p>Progress is possible. However, it has not been fast enough to meet eradication targets. And it has been unevenly spread. As this chart shows, much of the drop in poverty headcounts comes from China alone.</p>
+            </div>
           </article>
 
         </div>
@@ -927,6 +992,7 @@ footer{background:var(--hero-bg);border-top:1px solid var(--hero-line);padding:1
   </div>
   <img id="lb-img" src="" alt="Data visualisation">
   <video id="lb-video" src="" controls autoplay loop style="display:none;max-width:92vw;max-height:88vh;border-radius:4px;background:#000"></video>
+  <aside id="lb-text"></aside>
 </div>
 
 <!-- ═══ CONTACT ════════════════════════════════════════════════════════════ -->
@@ -1250,8 +1316,15 @@ const lbFrame     = document.getElementById('lb-frame');
 const lbImg       = document.getElementById('lb-img');
 const lbVideo     = document.getElementById('lb-video');
 const lbClose     = document.getElementById('lb-close');
+const lbText      = document.getElementById('lb-text');
 
-function openLightbox(src, type) {
+function openLightbox(src, type, slide) {
+  // Copy the slide's story text into the right-hand column
+  const story = slide && slide.querySelector('.stories-text');
+  lbText.innerHTML = story ? story.innerHTML : '';
+  lbOverlay.classList.toggle('lb-has-text', !!story);
+  // Width reserved for the text column (stacked below on narrow screens)
+  const textSpace = (story && window.innerWidth > 900) ? 340 + 35 : 0;
   const isImage = /\.(jpe?g|png|gif|webp|svg)$/i.test(src);
   const isVideo = type === 'video' || /\.mp4$/i.test(src);
   if (isImage) {
@@ -1275,7 +1348,7 @@ function openLightbox(src, type) {
     if (type === 'emissions') {
       // Full 1100×680 page — size iframe to maintain 1100:680 ratio so fitPage()
       // inside scales the page to fill the iframe exactly with no background strips.
-      const maxW = Math.floor(vw * 0.92);
+      const maxW = Math.floor(vw * 0.92) - textSpace;
       const maxH = Math.floor(vh * 0.88);
       let iw, ih;
       if (maxW / maxH > 1100 / 680) {
@@ -1290,7 +1363,7 @@ function openLightbox(src, type) {
         'width:' + iw + 'px;height:' + ih + 'px;border-radius:4px;';
     } else {
       // trade (or any future square/fullscreen viz): just size the iframe as a square
-      const s = Math.min(Math.floor(vh * 0.88), Math.floor(vw * 0.88));
+      const s = Math.min(Math.floor(vh * 0.88), Math.floor(vw * 0.88) - textSpace);
       lbFrameWrap.style.width  = s + 'px';
       lbFrameWrap.style.height = s + 'px';
       lbFrame.style.cssText =
@@ -1309,6 +1382,8 @@ function openLightbox(src, type) {
 function closeLightbox() {
   lbOverlay.classList.remove('open');
   lbOverlay.classList.remove('lb-panning');
+  lbOverlay.classList.remove('lb-has-text');
+  lbText.innerHTML = '';
   lbFrame.src = '';
   lbFrameWrap.style.display = 'none';
   lbImg.src = '';
